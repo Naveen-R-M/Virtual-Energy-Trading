@@ -43,20 +43,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# TODO: Include routers when route files are created
-# from .routes.market import router as market_router
-# from .routes.orders import router as orders_router  
-# from .routes.pnl import router as pnl_router
-# app.include_router(market_router)
-# app.include_router(orders_router)
-# app.include_router(pnl_router)
+# Include routers
+from .routes.market import router as market_router
+from .routes.orders import router as orders_router  
+from .routes.pnl import router as pnl_router
+
+app.include_router(market_router)
+app.include_router(orders_router)
+app.include_router(pnl_router)
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize application on startup"""
     try:
         logger.info("🚀 Virtual Energy Trader API starting up...")
-        logger.info("✅ API ready - Database integration pending")
+        
+        # Initialize database
+        from .database import init_db
+        init_db()
+        logger.info("✅ Database initialized")
+        
+        logger.info("✅ API ready with all routes loaded")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
@@ -173,9 +180,9 @@ async def api_status():
             "supported_nodes": ["PJM_RTO", "CAISO", "ERCOT"],
             "implementation_status": {
                 "frontend": "✅ Complete with two-market support",
-                "models": "🔄 Database models created",
-                "api_routes": "🔄 API endpoints created", 
-                "integration": "⏳ Pending route integration"
+                "models": "✅ Database models created",
+                "api_routes": "✅ API endpoints created", 
+                "integration": "✅ Routes integrated"
             }
         }
         

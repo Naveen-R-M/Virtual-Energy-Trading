@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced Database initialization script for Virtual Energy Trading Platform.
+Database initialization script for Virtual Energy Trading Platform.
 Creates all necessary tables and initial data for both Day-Ahead and Real-Time markets.
 """
 
@@ -16,72 +16,38 @@ sys.path.insert(0, str(app_dir))
 def create_database():
     """Create database and tables with enhanced two-market support."""
     try:
-        print("🗄️ Creating database tables...")
+        print("🗄️ Initializing database...")
         
-        # For now, create a placeholder until models are fully integrated
+        # Import and initialize database
+        from app.database import init_db
+        init_db()
+        
+        print("✅ Database initialized successfully!")
+        
+        # Create data directory for mock data files
         data_dir = Path("data")
         data_dir.mkdir(exist_ok=True)
         
-        # Create initialization marker with enhanced info
-        init_file = data_dir / "db_initialized.txt"
-        init_content = f"""Database initialized at {datetime.now()}
-
-ENHANCED FEATURES:
-==================
-✅ Day-Ahead Market Support
-   - 1-hour delivery slots
-   - 11 AM daily cutoff
-   - Max 10 orders per hour
-   - Settlement at DA closing price
-
-✅ Real-Time Market Support  
-   - 5-minute delivery slots
-   - Continuous trading (24/7)
-   - Max 50 orders per slot
-   - Immediate settlement
-
-✅ Database Schema Ready:
-   - TradingOrder (market field: day-ahead/real-time)
-   - DayAheadPrice (hourly closing prices)
-   - RealTimePrice (5-minute prices)
-   - OrderFill (execution records)
-   - PnLRecord (performance tracking)
-   - GridNode (market configuration)
-
-✅ Enhanced API Endpoints:
-   - /api/market/* (price data)
-   - /api/orders/* (order management)
-   - /api/pnl/* (P&L calculation)
-
-✅ Frontend Enhancements:
-   - Market type selection
-   - Smart form validation
-   - Market-specific rules display
-   - Enhanced order table with market column
-
-TODO:
-=====
-⏳ Complete database connection integration
-⏳ Enable API route imports in main.py
-⏳ Test end-to-end workflows
-⏳ GridStatus API integration
-"""
+        # Check database health
+        from app.database import check_database_health
+        health = check_database_health()
         
-        init_file.write_text(init_content)
+        print()
+        print("📊 Database Status:")
+        print(f"   - Connection: {health['connection']}")
+        if 'statistics' in health:
+            print(f"   - Grid Nodes: {health['statistics']['grid_nodes']}")
+            print(f"   - Trading Orders: {health['statistics']['trading_orders']}")
+            print(f"   - DA Prices: {health['statistics']['day_ahead_prices']}")
+            print(f"   - RT Prices: {health['statistics']['real_time_prices']}")
         
-        print("✅ Enhanced database initialization completed!")
-        print(f"   📁 Data directory: {data_dir}")
-        print(f"   📄 Status file: {init_file}")
         print()
         print("🏪 Markets Configured:")
         print("   📅 Day-Ahead: Hourly slots, 11AM cutoff, 10 orders/hour")
         print("   ⚡ Real-Time: 5-min slots, continuous, 50 orders/slot")
+        
         print()
-        print("🔧 Next Steps:")
-        print("   1. Complete database model integration")
-        print("   2. Enable API routes in main.py")
-        print("   3. Test order submission and matching")
-        print("   4. Verify P&L calculations")
+        print("✅ Database is ready for trading!")
         
     except Exception as e:
         print(f"❌ Database initialization failed: {e}")
@@ -95,8 +61,7 @@ def main():
     """Main initialization function."""
     print("⚡ Virtual Energy Trading Platform")
     print("=====================================")
-    print("🗄️ Enhanced Database Initialization")
-    print("📊 Day-Ahead + Real-Time Markets")
+    print("🗄️ Database Initialization")
     print()
     
     create_database()

@@ -8,6 +8,9 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:///./data/energy_trader.db
+      - GRIDSTATUS_API_KEY=6574119a04954abd93469f85194e07a0
+      - GRIDSTATUS_BASE_URL=https://api.gridstatus.io
+      - USE_REAL_DATA=true
       - DEFAULT_NODE=PJM_RTO
       - MARKET_TIMEZONE=America/New_York
       - ORDER_CUTOFF_HOUR=11

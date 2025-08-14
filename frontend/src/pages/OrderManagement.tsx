@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Grid,
   Card,
@@ -16,19 +16,22 @@ import {
   Message,
   Radio,
   Tooltip,
-  Badge
+  Badge,
+  ConfigProvider,
+  DatePicker
 } from '@arco-design/web-react'
 import {
   IconPlus,
   IconDelete,
   IconRefresh,
-  IconClock,
+  IconClockCircle,
   IconThunderbolt,
   IconCalendar,
   IconQuestion
 } from '@arco-design/web-react/icon'
 import dayjs from 'dayjs'
 import ModernStepper from '../components/ModernStepper'
+
 
 const { Row, Col } = Grid
 const { Title, Text } = Typography
@@ -136,6 +139,9 @@ const OrderManagement: React.FC = () => {
 
   const [loading, setLoading] = useState(false)
   const [selectedHour, setSelectedHour] = useState<string>('')
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('')
+  const [rtCountdown, setRtCountdown] = useState<string>('')
+  const [currentPosition, setCurrentPosition] = useState<any>(null)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterMarket, setFilterMarket] = useState<string>('all')
 
@@ -149,15 +155,64 @@ const OrderManagement: React.FC = () => {
     }
   })
 
-  // Generate 5-minute time slot options for Real-Time market
-  const realTimeSlotOptions = Array.from({ length: 12 }, (_, i) => {
-    const minute = i * 5
-    return {
-      label: `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`,
-      value: `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`,
-      disabled: false
+  // Generate upcoming 5-minute time slot options for Real-Time market with countdown
+  const generateRealTimeSlots = () => {
+    const now = new Date()
+    const slots = []
+    const currentMinutes = now.getMinutes()
+    const nextSlotMinutes = Math.ceil(currentMinutes / 5) * 5
+    
+    // Generate next 12 slots (1 hour of options)
+    for (let i = 0; i < 12; i++) {
+      const slotTime = new Date(now)
+      slotTime.setMinutes(nextSlotMinutes + i * 5, 0, 0)
+      
+      // Calculate time difference
+      const diffMs = slotTime.getTime() - now.getTime()
+      const diffMinutes = Math.floor(diffMs / 60000)
+      const diffSeconds = Math.floor((diffMs % 60000) / 1000)
+      
+      // Format countdown
+      const countdown = `${String(diffMinutes).padStart(2, '0')}:${String(diffSeconds).padStart(2, '0')}`
+      
+      // Check if slot is within locked scheduling window (2 minutes)
+      const isLocked = diffMs < 120000 // Less than 2 minutes
+      
+      slots.push({
+        label: dayjs(slotTime).format('HH:mm'),
+        value: dayjs(slotTime).format('HH:mm'),
+        disabled: isLocked,
+        countdown: countdown,
+        description: i === 0 ? 'Next slot' : `In ${countdown}`,
+        isNextSlot: i === 0,
+        diffMs: diffMs
+      })
     }
-  })
+    return slots
+  }
+
+  const [realTimeSlots, setRealTimeSlots] = useState(generateRealTimeSlots())
+  
+  // Update RT slots every second for countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRealTimeSlots(generateRealTimeSlots())
+    }, 1000)
+    
+    return () => clearInterval(timer)
+  }, [])
+  
+  // Auto-select next available slot when switching to RT market
+  useEffect(() => {
+    if (selectedMarket === 'real-time') {
+      const nextAvailableSlot = realTimeSlots.find(slot => !slot.disabled)
+      if (nextAvailableSlot && !selectedTimeSlot) {
+        setSelectedTimeSlot(nextAvailableSlot.value)
+        form.setFieldValue('timeSlot', nextAvailableSlot.value)
+        form.setFieldValue('hour', nextAvailableSlot.value.split(':')[0] + ':00')
+      }
+    }
+  }, [selectedMarket, realTimeSlots])
 
   // Market rules and constraints
   const getMarketRules = (market: MarketType) => {
@@ -193,7 +248,9 @@ const OrderManagement: React.FC = () => {
     }
   }
 
-  const currentSlotOrders = selectedHour ? getOrdersPerSlot(selectedMarket, selectedHour) : 0
+  const currentSlotOrders = selectedMarket === 'day-ahead' ? 
+    (selectedHour ? getOrdersPerSlot(selectedMarket, selectedHour) : 0) :
+    (selectedTimeSlot ? getOrdersPerSlot(selectedMarket, selectedTimeSlot) : 0)
   const maxOrdersPerSlot = getMarketRules(selectedMarket).maxOrdersPerSlot
   const marketRules = getMarketRules(selectedMarket)
 
@@ -205,6 +262,32 @@ const OrderManagement: React.FC = () => {
       return true // RT market is always open
     }
   }
+
+  // Fetch current position when time slot changes
+  useEffect(() => {
+    const fetchPosition = async () => {
+      if (!selectedHour && !selectedTimeSlot) return
+      
+      try {
+        const timeSlot = selectedMarket === 'real-time' ? selectedTimeSlot : selectedHour
+        if (!timeSlot) return
+        
+        // Mock position data for demo
+        const mockPosition = {
+          current_net_position: Math.random() * 5,
+          projected_net_position: Math.random() * 10,
+          buy_volume: Math.random() * 15,
+          sell_volume: Math.random() * 5
+        }
+        
+        setCurrentPosition(mockPosition)
+      } catch (error) {
+        console.error('Error fetching position:', error)
+      }
+    }
+    
+    fetchPosition()
+  }, [selectedHour, selectedTimeSlot, selectedMarket])
 
   const handleSubmitOrder = async (values: any) => {
     setLoading(true)
@@ -222,11 +305,23 @@ const OrderManagement: React.FC = () => {
       return
     }
 
+    // Client-side position validation
+    if (values.side === 'sell' && currentPosition) {
+      const maxSellable = Math.max(0, currentPosition.projected_net_position)
+      if (values.quantity > maxSellable) {
+        Message.error(
+          `Cannot sell ${values.quantity} MWh. Maximum sellable: ${maxSellable.toFixed(1)} MWh`
+        )
+        setLoading(false)
+        return
+      }
+    }
+
     setTimeout(() => {
       const newOrder: Order = {
         id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
         market: selectedMarket,
-        hour: values.hour,
+        hour: selectedMarket === 'day-ahead' ? values.hour : values.timeSlot?.split(':')[0] + ':00',
         timeSlot: selectedMarket === 'real-time' ? values.timeSlot : undefined,
         side: values.side,
         quantity: values.quantity,
@@ -239,6 +334,7 @@ const OrderManagement: React.FC = () => {
       setOrders(prev => [newOrder, ...prev])
       form.resetFields()
       setSelectedHour('')
+      setSelectedTimeSlot('')
       setLoading(false)
       Message.success(`${selectedMarket === 'day-ahead' ? 'Day-Ahead' : 'Real-Time'} order submitted successfully`)
     }, 800)
@@ -381,13 +477,32 @@ const OrderManagement: React.FC = () => {
       width: 60,
       render: (_, record: Order) => (
         record.status === 'pending' && (
-          <Button
-            type="text"
-            status="danger"
-            icon={<IconDelete />}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              cursor: 'pointer'
+            }}
             onClick={() => handleDeleteOrder(record.id)}
-            size="small"
-          />
+          >
+            <IconDelete 
+              style={{ 
+                fontSize: 16, 
+                color: '#ff4d4f',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ff7875';
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#ff4d4f';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            />
+          </div>
         )
       )
     }
@@ -459,9 +574,7 @@ const OrderManagement: React.FC = () => {
                 label={
                   <Space>
                     Market Type
-                    <Tooltip content="Choose between Day-Ahead (hourly) or Real-Time (5-min) markets">
-                      <IconQuestion style={{ fontSize: 12, color: '#666' }} />
-                    </Tooltip>
+                    <Tooltip content="Choose between Day-Ahead (hourly) or Real-Time (5-min) markets" />
                   </Space>
                 }
                 field="market"
@@ -469,7 +582,13 @@ const OrderManagement: React.FC = () => {
               >
                 <RadioGroup
                   value={selectedMarket}
-                  onChange={setSelectedMarket}
+                  onChange={(value) => {
+                    setSelectedMarket(value)
+                    // Reset form and selections when switching markets
+                    form.resetFields()
+                    setSelectedHour('')
+                    setSelectedTimeSlot('')
+                  }}
                   style={{ width: '100%' }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -509,49 +628,127 @@ const OrderManagement: React.FC = () => {
               }}>
                 <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
                   {selectedMarket === 'day-ahead' ? 'Day-Ahead Rules' : 'Real-Time Rules'}
-                </div>
-                <div style={{ fontSize: 11, color: '#666', lineHeight: 1.4 }}>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#666', lineHeight: 1.6 }}>
                   • {marketRules.description}<br/>
                   • Max {marketRules.maxOrdersPerSlot} orders per {marketRules.timeIncrement}<br/>
-                  • {marketRules.settlement}
+                  • {marketRules.settlement}<br/>
+                {selectedMarket === 'real-time' && (
+                  <span style={{ color: '#ff6b35' }}>
+                    • Orders lock 2 minutes before slot start
+                  </span>
+                )}
                 </div>
               </div>
 
-              {/* Hour Selection for Day-Ahead OR Time Slot for Real-Time */}
-              <FormItem
-                label={selectedMarket === 'day-ahead' ? 'Hour Slot' : 'Hour'}
-                field="hour"
-                rules={[{ required: true, message: 'Select hour' }]}
-              >
-                <Select
-                  placeholder={selectedMarket === 'day-ahead' ? 'Select hour slot' : 'Select hour'}
-                  options={dayAheadHourOptions}
-                  onChange={setSelectedHour}
-                  showSearch
+              {/* Real-Time Market Notice */}
+              {selectedMarket === 'real-time' && (
+                <Alert
+                  type="info"
+                  content="Orders execute at the start of your chosen 5-minute slot. Slots lock 2 minutes before execution."
+                  style={{ marginBottom: 16 }}
                 />
-              </FormItem>
+              )}
 
-              {/* 5-Minute Time Slot for Real-Time Market */}
-              {selectedMarket === 'real-time' && selectedHour && (
+              {/* Hour Selection for Day-Ahead */}
+              {selectedMarket === 'day-ahead' && (
                 <FormItem
-                  label="5-Min Time Slot"
-                  field="timeSlot"
-                  rules={[{ required: true, message: 'Select 5-minute slot' }]}
+                  label="Hour Slot"
+                  field="hour"
+                  rules={[{ required: true, message: 'Select hour' }]}
                 >
                   <Select
-                    placeholder="Select 5-min slot"
-                    options={realTimeSlotOptions.map(option => ({
-                      ...option,
-                      label: `${selectedHour.split(':')[0]}:${option.value.split(':')[1]}`,
-                      value: `${selectedHour.split(':')[0]}:${option.value.split(':')[1]}`
-                    }))}
+                    placeholder="Select hour slot"
+                    options={dayAheadHourOptions}
+                    onChange={setSelectedHour}
                     showSearch
                   />
                 </FormItem>
               )}
 
+              {/* 5-Minute Time Slot for Real-Time Market */}
+              {selectedMarket === 'real-time' && (
+                <FormItem
+                  label="Execution Time"
+                  field="timeSlot"
+                  rules={[{ required: true, message: 'Select execution time' }]}
+                >
+                  <Select
+                    placeholder="Select 5-minute slot"
+                    value={selectedTimeSlot || form.getFieldValue('timeSlot')}
+                    onChange={(value) => {
+                      setSelectedTimeSlot(value)
+                      setSelectedHour(value.split(':')[0] + ':00')
+                      form.setFieldValue('hour', value.split(':')[0] + ':00')
+                    }}
+                  >
+                    {realTimeSlots.map((slot, idx) => (
+                      <Select.Option 
+                        key={slot.value} 
+                        value={slot.value}
+                        disabled={slot.disabled}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          width: '100%'
+                        }}>
+                          <span style={{
+                            fontWeight: slot.isNextSlot ? 600 : 400,
+                            color: slot.disabled ? '#999' : '#000'
+                          }}>
+                            {slot.label}
+                          </span>
+                          <span style={{ 
+                            fontSize: 11, 
+                            color: slot.disabled ? '#999' : '#666',
+                            fontFamily: 'monospace'
+                          }}>
+                            {slot.isNextSlot ? 
+                              (slot.disabled ? 'Locked' : `Next slot - starts in ${slot.countdown}`) : 
+                              `In ${slot.countdown}`
+                            }
+                          </span>
+                        </div>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </FormItem>
+              )}
+
+              {/* Show countdown timer for selected RT slot */}
+              {selectedMarket === 'real-time' && selectedTimeSlot && (
+                <div style={{
+                  padding: 8,
+                  background: 'rgba(255, 107, 53, 0.1)',
+                  borderRadius: 'var(--radius-sm)',
+                  marginBottom: 12,
+                  textAlign: 'center',
+                  fontSize: 12
+                }}>
+                  {(() => {
+                    const selectedSlot = realTimeSlots.find(s => s.value === selectedTimeSlot)
+                    if (!selectedSlot) return null
+                    return (
+                      <span>
+                        <IconClockCircle style={{ marginRight: 4, fontSize: 12 }} />
+                        Execution in <span style={{ 
+                          fontFamily: 'monospace', 
+                          fontWeight: 600,
+                          color: selectedSlot.diffMs < 60000 ? '#ff4d4f' : '#ff6b35'
+                        }}>
+                          {selectedSlot.countdown}
+                        </span>
+                      </span>
+                    )
+                  })()}
+                </div>
+              )}
+
               {/* Order Limit Progress */}
-              {selectedHour && (
+              {((selectedMarket === 'day-ahead' && selectedHour) || 
+                (selectedMarket === 'real-time' && selectedTimeSlot)) && (
                 <div style={{
                   padding: 12,
                   background: 'var(--bg-surface)',
@@ -566,9 +763,9 @@ const OrderManagement: React.FC = () => {
                     fontSize: 12
                   }}>
                     <Text>
-                      {selectedMarket === 'day-ahead' ? 'Orders for' : 'RT Orders at'} {selectedHour}
-                      {selectedMarket === 'real-time' && form.getFieldValue('timeSlot') && 
-                        `:${form.getFieldValue('timeSlot').split(':')[1]}`
+                      {selectedMarket === 'day-ahead' ? 
+                        `Orders for ${selectedHour}` : 
+                        `RT Orders at ${form.getFieldValue('timeSlot')}`
                       }
                     </Text>
                     <Text style={{ fontFamily: 'monospace' }}>
@@ -581,6 +778,64 @@ const OrderManagement: React.FC = () => {
                     showText={false}
                     strokeWidth={4}
                   />
+                </div>
+              )}
+
+              {/* Show warning if selected slot is about to lock */}
+              {selectedMarket === 'real-time' && selectedTimeSlot && (() => {
+                const selectedSlot = realTimeSlots.find(s => s.value === selectedTimeSlot)
+                if (selectedSlot && selectedSlot.diffMs < 180000 && selectedSlot.diffMs > 120000) {
+                  return (
+                    <Alert
+                      type="warning"
+                      content={`Warning: This slot will lock in ${Math.floor((selectedSlot.diffMs - 120000) / 1000)} seconds`}
+                      style={{ marginBottom: 12 }}
+                    />
+                  )
+                }
+                return null
+              })()}
+
+              {/* Position Info for selected slot */}
+              {currentPosition && ((selectedMarket === 'day-ahead' && selectedHour) || 
+                (selectedMarket === 'real-time' && selectedTimeSlot)) && (
+                <div style={{
+                  padding: 12,
+                  background: 'var(--bg-surface)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: 16,
+                  border: '1px solid var(--border-primary)'
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+                    Current Position
+                  </div>
+                  <div style={{ fontSize: 11, lineHeight: 1.6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span>Net Position:</span>
+                      <span style={{ 
+                        fontFamily: 'monospace',
+                        fontWeight: 600,
+                        color: currentPosition.current_net_position > 0 ? '#00cc00' : 
+                               currentPosition.current_net_position < 0 ? '#ff4d4f' : '#666'
+                      }}>
+                        {currentPosition.current_net_position > 0 ? '+' : ''}
+                        {currentPosition.current_net_position.toFixed(1)} MWh
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span>Max Sellable:</span>
+                      <span style={{ fontFamily: 'monospace', color: '#666' }}>
+                        {Math.max(0, currentPosition.projected_net_position).toFixed(1)} MWh
+                      </span>
+                    </div>
+                    {currentPosition.current_net_position === 0 && form.getFieldValue('side') === 'sell' && (
+                      <Alert
+                        type="warning"
+                        content="You must buy energy before you can sell it"
+                        style={{ marginTop: 8 }}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -607,7 +862,18 @@ const OrderManagement: React.FC = () => {
                       { required: true, message: 'Enter quantity' },
                       { type: 'number', min: 0.1, message: 'Min: 0.1 MWh' },
                       { type: 'number', max: selectedMarket === 'day-ahead' ? 100 : 10, 
-                        message: `Max: ${selectedMarket === 'day-ahead' ? 100 : 10} MWh` }
+                        message: `Max: ${selectedMarket === 'day-ahead' ? 100 : 10} MWh` },
+                      {
+                        validator: (value, callback) => {
+                          if (form.getFieldValue('side') === 'sell' && currentPosition) {
+                            const maxSellable = Math.max(0, currentPosition.projected_net_position)
+                            if (value > maxSellable) {
+                              callback(`Maximum sellable: ${maxSellable.toFixed(1)} MWh`)
+                            }
+                          }
+                          callback()
+                        }
+                      }
                     ]}
                   >
                     <ModernStepper
@@ -840,7 +1106,7 @@ const OrderManagement: React.FC = () => {
                   <strong>Timing:</strong> Continuous trading (24/7)
                 </div>
                 <div style={{ marginBottom: 8 }}>
-                  <strong>Increments:</strong> 5-minute delivery slots
+                  <strong>Increments:</strong> 5-minute slots (immediate execution)
                 </div>
                 <div style={{ marginBottom: 8 }}>
                   <strong>Limits:</strong> Up to 50 orders per 5-min slot

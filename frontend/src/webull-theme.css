@@ -8,8 +8,8 @@
   --bg-card: #1a1a1a;
   --bg-surface: #222222;
   
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
+  --text-primary: #ffffff !important;
+  --text-secondary: #cccccc !important;
   --text-muted: #888888;
   
   --accent-primary: #ffffff;
@@ -251,6 +251,303 @@ body {
   font-weight: inherit !important;
 }
 
+/* === TARGETED BUTTON & DATE PICKER FIXES === */
+
+/* STRONGEST OVERRIDES FOR BUTTONS - NUCLEAR OPTION */
+.arco-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--text-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.arco-btn * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: inherit !important;
+}
+
+/* Primary buttons - WHITE BACKGROUND BLACK TEXT */
+.arco-btn-primary {
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+
+.arco-btn-primary,
+.arco-btn-primary *,
+.arco-btn-primary span,
+.arco-btn-primary .arco-btn-content {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Button content wrapper */
+.arco-btn .arco-btn-content {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: inherit !important;
+}
+
+/* Button icons */
+.arco-btn .arco-icon {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: inherit !important;
+}
+
+/* STRONGEST OVERRIDES FOR DATE PICKER */
+.arco-picker {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+  background: #ffffff !important;
+  border: 2px solid #e8e8e8 !important;
+}
+
+.arco-picker * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Date picker input container */
+.arco-picker-input {
+  color: #000000 !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+}
+
+/* Date picker input field */
+.arco-picker-input input {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+
+/* Date picker selected value display */
+.arco-picker-input .arco-picker-input-value {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Small button size specific fixes */
+.arco-btn-size-small {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+
+.arco-btn-size-small .arco-btn-content {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: inherit !important;
+}
+
+/* === NUCLEAR OPTION - TEXT VISIBILITY IN BUTTONS & DATE PICKER === */
+
+/* Force ALL text in buttons to be visible */
+.arco-btn span,
+.arco-btn div,
+.arco-btn p,
+.arco-btn text,
+.arco-btn .arco-btn-content,
+.arco-btn .arco-btn-content * {
+  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: inherit !important;
+  text-shadow: none !important;
+  background: none !important;
+}
+
+/* Primary button text - FORCE BLACK */
+.arco-btn-primary span,
+.arco-btn-primary div,
+.arco-btn-primary p,
+.arco-btn-primary text,
+.arco-btn-primary .arco-btn-content,
+.arco-btn-primary .arco-btn-content * {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+  text-shadow: none !important;
+  background: none !important;
+  font-weight: 700 !important;
+}
+
+/* Force ALL text in date picker to be visible */
+.arco-picker span,
+.arco-picker div,
+.arco-picker p,
+.arco-picker input,
+.arco-picker-input *,
+.arco-picker-input-value,
+.arco-picker-input-value * {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+  text-shadow: none !important;
+  background: none !important;
+  font-weight: 500 !important;
+}
+
+/* Text components inside buttons */
+.arco-btn .arco-typography,
+.arco-btn .arco-typography-text {
+  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.arco-btn-primary .arco-typography,
+.arco-btn-primary .arco-typography-text {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Date picker Text component */
+.arco-picker .arco-typography,
+.arco-picker .arco-typography-text {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Absolutely force text visibility in these specific elements */
+button span,
+button div:not(.arco-table *),
+.arco-picker span,
+.arco-picker div:not(.arco-table *),
+.arco-date-picker span,
+.arco-date-picker div:not(.arco-table *) {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* === ULTIMATE NUCLEAR OPTION === */
+
+/* Override ANY possible CSS hiding these elements */
+button {
+  color: var(--text-primary) !important;
+}
+
+button * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: inherit !important;
+}
+
+.arco-btn-primary {
+  color: #000000 !important;
+}
+
+.arco-btn-primary * {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Date picker ultimate override */
+.arco-picker,
+.arco-date-picker {
+  color: #000000 !important;
+}
+
+.arco-picker *,
+.arco-date-picker * {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Check CSS variables aren't causing issues */
+:root {
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+}
+
+/* === SPECIFIC REFRESH & VIEW ALL BUTTON FIXES ONLY === */
+
+/* Refresh button text - MULTIPLE TARGETING METHODS */
+.arco-btn:has(.arco-icon-refresh) .arco-btn-content,
+.arco-btn:has(.arco-icon-refresh) .arco-btn-content *,
+.arco-btn:has(.arco-icon-refresh) span {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* Alternative refresh button targeting by IconRefresh component */
+button[class*="arco-btn"]:has(svg[class*="icon-refresh"]) .arco-btn-content,
+button[class*="arco-btn"]:has(svg[class*="icon-refresh"]) span {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Primary button with refresh icon - Dashboard specific */
+.arco-btn-primary:has(.arco-icon-refresh) .arco-btn-content,
+.arco-btn-primary:has(.arco-icon-refresh) .arco-btn-content *,
+.arco-btn-primary:has(.arco-icon-refresh) span {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* Fallback: Any button containing "Refresh" text */
+.arco-btn-primary .arco-btn-content:contains("Refresh"),
+.arco-btn-primary .arco-btn-content:contains("Refresh") * {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+/* View All button text (primary button with "View All" text) */
+.arco-btn-primary:contains("View All") .arco-btn-content,
+.arco-btn-primary:contains("View All") .arco-btn-content *,
+.arco-btn-primary:contains("View All") span {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* Alternative targeting by button position in card header */
+.arco-card-header-extra .arco-btn-primary .arco-btn-content,
+.arco-card-header-extra .arco-btn-primary .arco-btn-content *,
+.arco-card-header-extra .arco-btn-primary span {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+  font-weight: 700 !important;
+}
+
 
 
 /* Form styling - modern high contrast */
@@ -283,7 +580,7 @@ body {
   font-weight: 400 !important;
 }
 
-/* Modern form labels */
+/* Modern form labels - ENHANCED VISIBILITY */
 .arco-form-item-label-text {
   color: var(--text-primary) !important;
   font-weight: 600 !important;
@@ -291,6 +588,18 @@ body {
   text-transform: none !important;
   letter-spacing: 0.2px !important;
   margin-bottom: 8px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+/* Force visibility for all form labels */
+.arco-form-item-label,
+.arco-form-item-label * {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Modern select dropdown */
@@ -306,6 +615,73 @@ body {
   color: #000000 !important;
   font-weight: 500 !important;
   font-size: 14px !important;
+}
+
+/* SELECT PLACEHOLDER VISIBILITY FIX */
+.arco-select-view-single .arco-select-view-value {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Select placeholder when no value selected */
+.arco-select-view-single .arco-select-placeholder {
+  color: #666666 !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-size: 14px !important;
+}
+
+/* Select dropdown text - force visibility */
+.arco-select-view-single,
+.arco-select-view-single * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Select value text specifically */
+.arco-select-view-single .arco-select-view-value,
+.arco-select-view-single .arco-select-placeholder {
+  color: #666666 !important;
+  -webkit-text-fill-color: #666666 !important;
+  text-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+/* === ADDITIONAL SELECT FIXES === */
+
+/* Force select text visibility - NUCLEAR OPTION */
+.arco-select-view-single input {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Select inner content */
+.arco-select-view-single .arco-select-view-input {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Select value display - strongest override */
+.arco-select .arco-select-view .arco-select-view-value {
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+/* Select placeholder - strongest override */
+.arco-select .arco-select-view .arco-select-placeholder {
+  color: #999999 !important;
+  opacity: 0.8 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #999999 !important;
+  font-style: italic !important;
 }
 
 /* Modern input number styling - minimal spinner design */
@@ -418,19 +794,43 @@ body {
 
 /* === MODERN STEPPER COMPONENT === */
 
-/* Modern stepper container - compact size */
+/* Modern stepper container - compact size with better alignment */
 .modern-stepper {
   width: 100% !important;
-  max-width: 140px !important;
-  margin: 0 auto !important;
+  max-width: 160px !important;
+  margin: 0 !important;
   height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* Form item styling for modern steppers */
+/* Form item styling for modern steppers - CENTER ALIGNMENT */
 .arco-form-item .modern-stepper {
   width: 100% !important;
-  max-width: 140px !important;
+  max-width: 160px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Form item content wrapper - center the stepper */
+.arco-form-item-content {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* Form item content stepper wrapper */
+.arco-form-item-content .modern-stepper {
+  width: 100% !important;
+  max-width: 160px !important;
   margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Stepper focus states */
@@ -948,6 +1348,182 @@ body {
   margin-right: 6px;
 }
 
+/* Modal Styling for Dark Theme - Fix visibility issues */
+.arco-modal {
+  color: var(--text-primary) !important;
+}
+
+.arco-modal-mask {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+.arco-modal-wrapper .arco-modal {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-primary) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
+}
+
+.arco-modal-header {
+  background: var(--bg-card) !important;
+  border-bottom: 1px solid var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.arco-modal-title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.arco-modal-content {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  padding: 20px !important;
+}
+
+.arco-modal-footer {
+  background: var(--bg-card) !important;
+  border-top: 1px solid var(--border-primary) !important;
+  padding: 12px 20px !important;
+}
+
+/* Modal buttons - Fixed to prevent flickering */
+.arco-modal-footer .arco-btn {
+  min-width: 80px !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+}
+
+.arco-modal-footer .arco-btn-default {
+  background: transparent !important;
+  border: 1px solid var(--border-secondary) !important;
+  color: var(--text-primary) !important;
+  padding: 4px 15px !important;
+  height: 32px !important;
+}
+
+.arco-modal-footer .arco-btn-default:hover {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--accent-primary) !important;
+  color: var(--text-primary) !important;
+  transform: none !important;
+}
+
+.arco-modal-footer .arco-btn-default:focus {
+  border: 1px solid var(--accent-primary) !important;
+  box-shadow: none !important;
+}
+
+.arco-modal-footer .arco-btn-primary {
+  background: var(--accent-primary) !important;
+  border: 1px solid var(--accent-primary) !important;
+  color: var(--bg-primary) !important;
+  padding: 4px 15px !important;
+  height: 32px !important;
+}
+
+.arco-modal-footer .arco-btn-primary:hover {
+  background: var(--accent-secondary) !important;
+  border: 1px solid var(--accent-secondary) !important;
+  color: var(--bg-primary) !important;
+  transform: none !important;
+}
+
+.arco-modal-footer .arco-btn-primary:focus {
+  border: 1px solid var(--accent-secondary) !important;
+  box-shadow: none !important;
+}
+
+/* Danger/Delete button in modal */
+.arco-modal-footer .arco-btn-status-danger {
+  background: var(--danger) !important;
+  border: 1px solid var(--danger) !important;
+  color: #ffffff !important;
+  padding: 4px 15px !important;
+  height: 32px !important;
+}
+
+.arco-modal-footer .arco-btn-status-danger:hover {
+  background: var(--danger-dark) !important;
+  border: 1px solid var(--danger-dark) !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
+.arco-modal-footer .arco-btn-status-danger:focus {
+  border: 1px solid var(--danger-dark) !important;
+  box-shadow: none !important;
+}
+
+/* Modal confirm specific styles */
+.arco-modal-confirm .arco-modal-confirm-body {
+  color: var(--text-primary) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+}
+
+.arco-modal-confirm .arco-modal-confirm-body-wrapper {
+  display: flex !important;
+  align-items: flex-start !important;
+}
+
+.arco-modal-confirm .arco-modal-confirm-body-icon {
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.arco-modal-confirm .arco-modal-confirm-title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  margin-bottom: 8px !important;
+}
+
+.arco-modal-confirm .arco-modal-confirm-content {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* Prevent modal footer from shifting */
+.arco-modal-footer {
+  background: var(--bg-card) !important;
+  border-top: 1px solid var(--border-primary) !important;
+  padding: 12px 20px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  min-height: 56px !important;
+}
+
+/* Ensure modal doesn't shift position */
+.arco-modal-wrapper {
+  position: fixed !important;
+  inset: 0 !important;
+  overflow: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.arco-modal {
+  position: relative !important;
+  margin: 0 auto !important;
+  top: auto !important;
+  transform: none !important;
+}
+
+/* Modal close button */
+.arco-modal-close-icon {
+  color: var(--text-secondary) !important;
+}
+
+.arco-modal-close-icon:hover {
+  color: var(--text-primary) !important;
+  background: var(--bg-surface) !important;
+}
+
 /* === TABLE READABILITY IMPROVEMENTS === */
 
 /* Enhanced table contrast */
@@ -1346,6 +1922,186 @@ body {
 
 .price-neutral {
   color: var(--text-primary) !important;
+}
+
+/* === RADIO BUTTON STYLING - FIX VISIBILITY === */
+
+/* Radio button container */
+.arco-radio-group {
+  width: 100% !important;
+}
+
+/* Radio button wrapper */
+.arco-radio {
+  color: var(--text-primary) !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  padding: 12px !important;
+  border-radius: var(--radius-md) !important;
+  transition: all 0.2s ease !important;
+}
+
+.arco-radio:hover {
+  background: var(--bg-surface) !important;
+}
+
+/* Radio button input */
+.arco-radio-input {
+  margin-right: 12px !important;
+  margin-top: 2px !important;
+}
+
+/* Radio button label - FORCE VISIBILITY */
+.arco-radio .arco-radio-label,
+.arco-radio .arco-radio-label *,
+.arco-radio .arco-radio-label div,
+.arco-radio .arco-radio-label span {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-weight: 500 !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+/* Market type radio button specific styling */
+.arco-radio .arco-radio-label div:first-child {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  margin-bottom: 4px !important;
+}
+
+.arco-radio .arco-radio-label div:last-child {
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+}
+
+/* Radio button checked state */
+.arco-radio-checked {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--accent-primary) !important;
+}
+
+.arco-radio-checked .arco-radio-label,
+.arco-radio-checked .arco-radio-label * {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* Radio button icon visibility */
+.arco-radio .arco-icon {
+  color: var(--text-secondary) !important;
+  margin-right: 8px !important;
+}
+
+.arco-radio-checked .arco-icon {
+  color: var(--accent-primary) !important;
+}
+
+/* === SPACE COMPONENT VISIBILITY === */
+
+/* Force visibility for all Space component children */
+.arco-space,
+.arco-space * {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Space component text specifically */
+.arco-space div,
+.arco-space span,
+.arco-space p {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+/* Radio button content within Space */
+.arco-radio .arco-space div {
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+}
+
+/* Market description text */
+.arco-radio .arco-space div:last-child {
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+}
+
+/* === GENERAL TEXT VISIBILITY FIXES === */
+
+/* REMOVED GLOBAL OVERRIDES - ONLY TARGET FORM ELEMENTS */
+
+/* Card content text - exclude tables */
+.arco-card-body span:not(.arco-table *),
+.arco-card-body div:not(.arco-table *),
+.arco-card-body p:not(.arco-table *) {
+  color: var(--text-primary) !important;
+}
+
+/* Form content text only */
+.arco-form span,
+.arco-form div:not(.arco-input):not(.arco-select-view-single):not(.arco-table *),
+.arco-form p {
+  color: var(--text-primary) !important;
+}
+
+/* === SPECIFIC ORDER FORM FIXES === */
+
+/* Market Type section visibility */
+.arco-form-item .arco-radio-group {
+  background: transparent !important;
+}
+
+/* Radio button market labels - NUCLEAR OPTION */
+.arco-radio-group .arco-radio .arco-radio-label {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+/* Market title (Day-Ahead Market, Real-Time Market) */
+.arco-radio-group .arco-radio .arco-radio-label > div > div:first-child {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  margin-bottom: 4px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Market description (Hourly bids, 5-min intervals) */
+.arco-radio-group .arco-radio .arco-radio-label > div > div:last-child {
+  color: #cccccc !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: #cccccc !important;
+}
+
+/* Icon visibility in radio buttons */
+.arco-radio .arco-space .arco-icon {
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Tooltip text visibility */
+.arco-tooltip,
+.arco-tooltip * {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 

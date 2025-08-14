@@ -10,13 +10,15 @@ import {
   Select,
   DatePicker,
   Alert,
-  Spin
+  Spin,
+  ConfigProvider
 } from '@arco-design/web-react'
 import {
   IconUp,
   IconDown,
   IconRefresh
 } from '@arco-design/web-react/icon'
+
 import { 
   LineChart, 
   Line, 
@@ -150,9 +152,16 @@ const mockOrderData = [
 const Dashboard: React.FC = () => {
   const [priceData, setPriceData] = useState(generateMockPriceData())
   const [pnlData, setPnlData] = useState(generateMockPnLData())
-  const [selectedDate, setSelectedDate] = useState(dayjs())
+  const [selectedDate, setSelectedDate] = useState<string | dayjs.Dayjs>(dayjs())
   const [selectedNode, setSelectedNode] = useState('PJM_RTO')
   const [loading, setLoading] = useState(false)
+
+  // Ensure selectedDate is always a dayjs object
+  const dateObj = typeof selectedDate === 'string' ? dayjs(selectedDate) : selectedDate
+  
+  // Check if selected date is today
+  const isToday = dateObj.isSame(dayjs(), 'day')
+  const isPast = dateObj.isBefore(dayjs(), 'day')
 
   const refreshData = () => {
     setLoading(true)
@@ -334,13 +343,26 @@ const Dashboard: React.FC = () => {
                   Date:
                 </Text>
                 <DatePicker 
-                  value={selectedDate}
-                  onChange={setSelectedDate}
+                  value={dateObj}
+                  onChange={(dateString, date) => {
+                    // Handle both string and dayjs object
+                    if (date) {
+                      setSelectedDate(date)
+                    } else if (dateString) {
+                      setSelectedDate(dayjs(dateString))
+                    }
+                  }}
                   size="small"
+                  disabledDate={(current) => {
+                    // Disable future dates - prevent selecting dates after today
+                    return current && current.isAfter(dayjs().endOf('day'))
+                  }}
+                  format="YYYY-MM-DD"
+                  placeholder="Select date"
+                  // English locale is set globally in App.tsx
                 />
               </Space>
               <Button 
-                type="primary" 
                 icon={<IconRefresh />}
                 onClick={refreshData}
                 loading={loading}
@@ -415,9 +437,11 @@ const Dashboard: React.FC = () => {
             className="webull-card"
             title="Market Prices - Day-Ahead vs Real-Time"
             extra={
-              <Tag style={{ background: '#ffffff', color: '#000000', fontSize: 10, fontWeight: 600 }}>
-                LIVE
-              </Tag>
+              isToday && (
+                <Tag style={{ background: '#ffffff', color: '#000000', fontSize: 10, fontWeight: 600 }}>
+                  LIVE
+                </Tag>
+              )
             }
             style={{ height: 450 }}
           >
@@ -429,7 +453,11 @@ const Dashboard: React.FC = () => {
                 </Text>
               </div>
             ) : (
-              <EnhancedPriceChart loading={loading} />
+              <EnhancedPriceChart 
+                loading={loading}
+                selectedDate={dateObj}
+                isToday={isToday}
+              />
             )}
           </Card>
         </Col>

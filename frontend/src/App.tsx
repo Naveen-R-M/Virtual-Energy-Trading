@@ -1,6 +1,6 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { Card, Layout, Typography, Avatar, Space, Button, Badge, Tabs } from '@arco-design/web-react'
+import { Card, Layout, Typography, Avatar, Space, Button, Badge, Tabs, ConfigProvider } from '@arco-design/web-react'
 import { 
   IconThunderbolt, 
   IconDashboard, 
@@ -9,6 +9,7 @@ import {
   IconUser,
   IconNotification
 } from '@arco-design/web-react/icon'
+import enUS from '@arco-design/web-react/es/locale/en-US'
 import Dashboard from './pages/Dashboard'
 import OrderManagement from './pages/OrderManagement'
 import '@arco-design/web-react/dist/css/arco.css'
@@ -162,9 +163,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ConfigProvider locale={enUS}>
+      <Router>
+        <AppContent />
+      </Router>
+    </ConfigProvider>
   )
 }
 

@@ -39,6 +39,8 @@ interface ChartDataPoint {
  */
 interface EnhancedPriceChartProps {
   loading?: boolean;
+  selectedDate?: dayjs.Dayjs;
+  isToday?: boolean;
 }
 
 /**
@@ -53,15 +55,18 @@ interface TooltipProps {
 /**
  * Generate comprehensive historical data for different time periods
  * @param duration - Time period (1d, 1w, 1m, 6m, 1y, 5y)
+ * @param selectedDate - The selected date from the calendar
+ * @param isToday - Whether the selected date is today
  * @returns Array of chart data points
  */
-const generateHistoricalData = (duration: string): ChartDataPoint[] => {
+const generateHistoricalData = (duration: string, selectedDate?: dayjs.Dayjs, isToday?: boolean): ChartDataPoint[] => {
   const data: ChartDataPoint[] = [];
-  let startDate = dayjs();
+  let startDate = selectedDate || dayjs();
   let intervals: number;
   let format: string;
   let intervalUnit: dayjs.ManipulateType;
   let intervalAmount: number;
+  const currentTime = dayjs();
 
   // Configure time parameters based on duration
   switch (duration) {
@@ -118,6 +123,16 @@ const generateHistoricalData = (duration: string): ChartDataPoint[] => {
   // Generate realistic price data
   for (let i = 0; i < intervals; i++) {
     const timestamp = startDate.add(i * intervalAmount, intervalUnit);
+    
+    // For today in 1d view, only show data up to current time
+    if (duration === '1d' && isToday && timestamp.isAfter(currentTime)) {
+      break;
+    }
+    
+    // Skip future dates in other views
+    if (timestamp.isAfter(currentTime)) {
+      break;
+    }
 
     // Generate realistic price patterns based on time of day/period
     let basePrice = 45;
@@ -172,15 +187,17 @@ const generateHistoricalData = (duration: string): ChartDataPoint[] => {
  * Enhanced Price Chart Component with professional trading features
  * Includes time duration controls, mouse wheel zooming, and brush navigation
  */
-const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false }) => {
+const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false, selectedDate, isToday = false }) => {
   // State management
   const [selectedDuration, setSelectedDuration] = useState<string>('1d');
-  const [chartData, setChartData] = useState<ChartDataPoint[]>(generateHistoricalData('1d'));
+  const [chartData, setChartData] = useState<ChartDataPoint[]>(generateHistoricalData('1d', selectedDate, isToday));
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Duration options configuration
-  const durations: Duration[] = [
+  // Duration options configuration - only show 1D for specific dates
+  const durations: Duration[] = selectedDate ? [
+    { key: '1d', label: '1D' }
+  ] : [
     { key: '1d', label: '1D' },
     { key: '1w', label: '1W' },
     { key: '1m', label: '1M' },
@@ -189,17 +206,17 @@ const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false
     { key: '5y', label: '5Y' },
   ];
 
-  // Update chart data when duration changes
+  // Update chart data when duration or date changes
   useEffect(() => {
-    const newData = generateHistoricalData(selectedDuration);
+    const newData = generateHistoricalData(selectedDuration, selectedDate, isToday);
     setChartData(newData);
     setBrushDomain(null); // Reset zoom when changing duration
-  }, [selectedDuration]);
+  }, [selectedDuration, selectedDate, isToday]);
 
   // Mouse wheel zoom functionality
   useEffect(() => {
     const chartElement = chartRef.current;
-    if (!chartElement) return;
+    if (!chartElement || chartData.length === 0) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -225,7 +242,7 @@ const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false
       // Ensure bounds are within data limits
       if (newStart < 0) {
         newStart = 0;
-        newEnd = newRange;
+        newEnd = Math.min(dataLength - 1, newRange);
       } else if (newEnd >= dataLength) {
         newEnd = dataLength - 1;
         newStart = Math.max(0, newEnd - newRange);
@@ -249,8 +266,8 @@ const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false
    * Handle brush domain changes for zooming/panning
    */
   const handleBrushChange = (domain: any): void => {
-    if (domain?.startIndex !== undefined && domain?.endIndex !== undefined) {
-      setBrushDomain([domain.startIndex, domain.endIndex]);
+    if (domain?.startIndex !== undefined && domain?.endIndex !== undefined && chartData.length > 0) {
+      setBrushDomain([domain.startIndex, Math.min(domain.endIndex, chartData.length - 1)]);
     }
   };
 
@@ -291,9 +308,26 @@ const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false
   };
 
   // Get displayed data based on brush domain
-  const displayData = brushDomain
+  const displayData = brushDomain && chartData.length > 0
     ? chartData.slice(brushDomain[0], brushDomain[1] + 1)
     : chartData;
+
+  // Prevent rendering chart with no data
+  if (chartData.length === 0) {
+    return (
+      <div className="enhanced-chart-container">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 300,
+          color: '#666'
+        }}>
+          <Text>No data available for the selected period</Text>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={chartRef} className="enhanced-chart-container">
@@ -319,7 +353,9 @@ const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false
           ))}
         </div>
 
-        <Text className="chart-instructions">Scroll to zoom • Drag timeline to pan</Text>
+        {durations.length > 1 && (
+          <Text className="chart-instructions">Scroll to zoom • Drag timeline to pan</Text>
+        )}
       </div>
 
       {/* Main Chart */}
@@ -416,7 +452,7 @@ const EnhancedPriceChart: React.FC<EnhancedPriceChartProps> = ({ loading = false
                 fill="#1a1a1a"
                 onChange={handleBrushChange}
                 startIndex={brushDomain?.[0] ?? 0}
-                endIndex={brushDomain?.[1] ?? chartData.length - 1}
+                endIndex={brushDomain?.[1] ?? Math.max(0, chartData.length - 1)}
               />
             </AreaChart>
           </ResponsiveContainer>

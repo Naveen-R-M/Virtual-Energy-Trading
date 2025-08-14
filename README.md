@@ -1,93 +1,121 @@
-# ⚡ Virtual Energy Trader
+# ⚡ Virtual Energy Trading Platform
 
-A comprehensive simulation platform for trading electricity in the **Day-Ahead (DA)** and **Real-Time (RT)** energy markets. Help balance the grid while maximizing profits through strategic energy trading.
+A sophisticated simulation platform for trading electricity in **Day-Ahead (DA)** and **Real-Time (RT)** energy markets. Built with **React + Arco Design** (frontend) and **FastAPI + SQLite** (backend), integrated with **GridStatus.io API for real market data**.
 
-**Tech Stack**: React + Arco Design (frontend) • FastAPI + SQLite (backend) • GridStatus.io API (market data)
+> **Goal:** Buy low, sell high — while helping balance the energy grid through strategic trading in both hourly and 5-minute markets.
 
-> 🎯 **Goal**: Buy low, sell high while helping balance energy markets as a virtual trader
+![Energy Trading Platform](https://img.shields.io/badge/Status-Ready%20to%20Trade-success)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![React](https://img.shields.io/badge/React-18.2-61dafb)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688)
 
----
+## 🎯 Features
 
-## 📋 Project Requirements
+### Two-Market Trading System
+- **📅 Day-Ahead Market**
+  - 1-hour delivery slots
+  - 11 AM daily cutoff (EST)
+  - Max 10 orders per hour
+  - Settlement at DA closing price
+  - P&L calculated against RT prices during delivery
 
-This platform simulates a virtual energy trader that can:
+- **⚡ Real-Time Market**
+  - 5-minute delivery slots with countdown timers
+  - Continuous trading (24/7)
+  - Max 50 orders per slot
+  - Immediate settlement at execution
+  - Auto-selects next available slot
+  - 2-minute lock before execution
 
-### Day-Ahead Market
-- **Trading Window**: Submit bids/offers before 11:00 AM local time
-- **Time Slots**: 1-hour increments for next day delivery
-- **Order Limits**: Maximum 10 orders per hour slot
-- **Settlement**: Orders filled at market closing price if limit price is met
-- **Order Types**: Buy/Sell with price and quantity (MWh)
+### Position Management & Validation
+- **🚫 No Naked Short Selling** — Must buy energy before selling
+- **📊 Real-time Position Tracking** — Net position per time slot
+- **✅ Smart Validation** — Client and server-side checks
+- **📈 Position Display** — Shows max sellable quantity
 
-### Real-Time Market
-- **Frequency**: Price updates every 5 minutes
-- **Purpose**: Offset day-ahead positions during actual delivery
-- **P&L Calculation**: Compare DA contract price vs RT market prices
+### Data Source Control (STRICT MODE)
+- **🔴 USE_REAL_DATA=true** — ONLY uses GridStatus API, no fallback
+- **🟢 USE_REAL_DATA=false** — ONLY uses mock data generation
+- **⚠️ No Automatic Fallback** — If real data fails, API returns 503 errors
+- **🔧 Configure via `.env`** — Strict enforcement of data source
 
-### Core Features
-- 📊 **Real market data** from GridStatus.io API
-- 📈 **Interactive visualizations** of DA hourly vs RT 5-minute pricing
-- 📝 **Order management** with validation and limits enforcement
-- ⚖️ **Matching engine** that settles DA orders at market close
-- 💰 **P&L simulation** comparing DA positions against RT prices
-- 📊 **Trading analytics** with KPIs, win rates, and performance metrics
+### Core Functionality
+- **📈 Advanced Price Visualization** — Overlay DA hourly vs RT 5-minute prices
+- **📝 Smart Order Management** — Market-specific validation and limit enforcement
+- **✅ Automated Matching Engine** — Fill orders based on limit prices
+- **💰 P&L Simulation** — Calculate profits comparing DA fills vs RT delivery prices
+- **📊 Performance Analytics** — Win rate, max drawdown, volume tracking
+- **🎯 Portfolio View** — Combined P&L across both markets
 
----
-
-## 🏗️ Architecture
+## 🏗 Architecture
 
 ```
-Virtual-Energy-Trading/
-├── frontend/           # React + Arco Design UI
-│   ├── src/
-│   │   ├── components/ # Charts, forms, tables
-│   │   ├── pages/      # Dashboard, Orders, Analytics
-│   │   └── api/        # API client
-├── backend/            # FastAPI + SQLite API
-│   ├── app/
-│   │   ├── models/     # Database models
-│   │   ├── routes/     # API endpoints
-│   │   └── services/   # Business logic
-│   └── scripts/        # Data ingestion, utilities
-└── docs/               # Documentation
+frontend/              # React + TypeScript + Arco Design
+├── src/
+│   ├── components/    # Charts, forms, tables
+│   ├── pages/        # Dashboard, Order Management
+│   └── utils/        # API client, mock data
+│
+backend/              # FastAPI + SQLModel + SQLite
+├── app/
+│   ├── models.py     # Database models
+│   ├── database.py   # DB connection
+│   ├── routes/       # API endpoints
+│   │   ├── market.py # Price data endpoints
+│   │   ├── orders.py # Order management
+│   │   └── pnl.py    # P&L calculations
+│   └── services/     # Business logic
+│       ├── market_data.py     # Price fetching (STRICT MODE)
+│       ├── position_manager.py # Position validation
+│       ├── matching_engine.py # Order matching
+│       └── pnl_calculator.py  # P&L engine
+└── scripts/
+    ├── init_db.py    # Database setup
+    └── fetch_prices.py # Data ingestion
 ```
-
-**Data Flow**: GridStatus.io → Backend → SQLite → API → React UI
-
----
 
 ## 🚀 Quick Start
 
-### 🐳 Docker (Recommended - No Installation Required!)
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- npm or yarn
 
-**Prerequisites**: Only [Docker Desktop](https://docker.com/products/docker-desktop) required
+### Environment Configuration
 
 ```bash
-cd Virtual-Energy-Trading
-
-# Production setup
-docker-compose up -d --build
-docker-compose exec backend python scripts/init_db.py
-docker-compose exec backend python scripts/fetch_prices.py --node PJM_RTO --date yesterday --mock
-
-# OR Development setup (with hot reloading)
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
-docker-compose exec backend python scripts/init_db.py
-docker-compose exec backend python scripts/fetch_prices.py --node PJM_RTO --date yesterday --mock
+cd backend
+cp .env.example .env
 ```
 
-**That's it!** ✨
-- 🖥️ **Frontend**: http://localhost (production) or http://localhost:5173 (dev)
-- 🌐 **Backend API**: http://localhost:8000 
-- 📚 **API Docs**: http://localhost:8000/docs
+Edit `.env` and configure data source:
+```env
+# STRICT MODE - No fallback between real and mock data
+USE_REAL_DATA=true  # Set to 'false' for mock data only
+GRIDSTATUS_API_KEY=your_api_key_here  # Required if USE_REAL_DATA=true
+```
 
-📖 **Detailed Docker Guide**: [docs/DOCKER.md](docs/DOCKER.md)
+### One-Command Setup
 
----
+#### Windows
+```bash
+./start-all.bat
+```
 
-### 🛠️ Manual Installation (Alternative)
+#### Linux/Mac
+```bash
+chmod +x start-all.sh
+./start-all.sh
+```
 
-**Prerequisites**: Python 3.8+, Node.js 16+, Git
+This will:
+1. Create Python virtual environment
+2. Install all dependencies
+3. Initialize the database
+4. Start both backend and frontend servers
+5. Use data source based on `USE_REAL_DATA` flag
+
+### Manual Setup
 
 #### Backend Setup
 ```bash
@@ -95,143 +123,186 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+# Configure data source
+cp .env.example .env
+# Edit .env - set USE_REAL_DATA and API key
+
+# Initialize database
+python scripts/init_db.py
+
+# Start server
 uvicorn app.main:app --reload
 ```
 
-#### Frontend Setup  
+Backend will be available at: http://localhost:8000
+
+#### Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-📖 **Manual Setup Guide**: [docs/SETUP.md](docs/SETUP.md)
+Frontend will be available at: http://localhost:5173
 
----
+## 📡 API Documentation
 
-## 🎮 How to Use
+Interactive API docs available at: http://localhost:8000/docs
 
-### 1. **Select Market & Date**
-Choose a grid node (e.g., PJM_RTO) and trading date
+### Key Endpoints
 
-### 2. **Analyze Market Data**
-- View DA hourly prices vs RT 5-minute price overlay
-- Identify arbitrage opportunities
-- Study price volatility patterns
+#### Market Data
+- `GET /api/market/da?date=YYYY-MM-DD&node=PJM_RTO` - Day-ahead prices
+- `GET /api/market/rt?start=...&end=...&node=PJM_RTO` - Real-time prices
+- `GET /api/market/latest?node=PJM_RTO` - Latest prices for both markets
+- `GET /api/market/data-source` - Check data source status
 
-### 3. **Place Orders**
-- Submit buy/sell orders before 11:00 AM cutoff
-- Set limit prices and quantities (MWh)
-- Maximum 10 orders per hour slot
+#### Order Management
+- `POST /api/orders` - Create order with position validation
+- `GET /api/orders` - List orders with filters
+- `POST /api/orders/match/day/{date}` - Match DA orders
+- `GET /api/orders/position/summary` - Portfolio position summary
+- `GET /api/orders/position/hourly` - Hour-by-hour positions
 
-### 4. **Execute Trading Day**
-- **Match Orders**: Run matching engine at DA market close
-- Orders fill if limit price is met at closing price
-- **Calculate P&L**: Offset DA positions against RT prices during delivery
+#### P&L Simulation
+- `POST /api/pnl/simulate/day-ahead/{date}` - DA P&L calculation
+- `POST /api/pnl/simulate/real-time/{date}` - RT P&L calculation
+- `GET /api/pnl/portfolio/{date}` - Combined portfolio P&L
+- `GET /api/pnl/analytics` - Performance metrics
 
-### 5. **Analyze Performance**
-- Review hourly P&L breakdown
-- Track cumulative performance
-- Analyze win rates and drawdowns
+## 📊 Data Source Behavior
 
----
+### Real Data Mode (`USE_REAL_DATA=true`)
+```json
+// Success Response
+{
+  "prices": [...],
+  "source": "gridstatus"
+}
 
-## 📡 API Reference
+// Failure Response (NO FALLBACK)
+{
+  "status_code": 503,
+  "detail": "Real data unavailable: GridStatus API error"
+}
+```
 
-### Market Data
-- `GET /api/market/da?date=YYYY-MM-DD&node=PJM_RTO` - Day-ahead hourly prices
-- `GET /api/market/rt?start=...&end=...&node=PJM_RTO` - Real-time 5-min prices
+### Mock Data Mode (`USE_REAL_DATA=false`)
+- Generates realistic price patterns
+- Peak hours (2-7 PM): $50-80/MWh
+- Off-peak (midnight-6 AM): $20-40/MWh
+- RT prices ±15% volatility from DA
+
+## 💼 Business Logic
+
+### Position Management Rules
+1. **Initial State**: Net position = 0 MWh
+2. **Buy Order**: Increases net position
+3. **Sell Order**: Decreases net position (must not go negative)
+4. **Validation**: Max sellable = Current net position
+
+Example:
+```
+Hour 14:00 - Buy 10 MWh → Net: +10 MWh
+Hour 14:00 - Sell 6 MWh → Net: +4 MWh  ✓
+Hour 14:00 - Sell 5 MWh → BLOCKED (Max: 4 MWh)
+```
+
+### Real-Time Market Features
+- **Auto-selection**: Next available slot pre-selected
+- **Live Countdown**: Shows time until execution
+- **Slot Locking**: Orders lock 2 minutes before execution
+- **Warning System**: Alerts when slot is about to lock
+
+## 🖼 Screenshots
+
+### Dashboard
+- Dual-axis price chart (DA vs RT)
+- P&L performance over time
+- Market status indicators
+- KPI cards with win rate
 
 ### Order Management
-- `POST /api/orders` - Submit new order
-- `GET /api/orders?date=YYYY-MM-DD&node=PJM_RTO` - List orders
+- Market type selection (DA/RT)
+- Position display with max sellable
+- Real-time countdown for RT slots
+- Order table with status tracking
 
-### Trading Operations
-- `POST /api/match/day/{date}?node=PJM_RTO` - Execute DA market matching
-- `POST /api/simulate/day/{date}?node=PJM_RTO` - Calculate P&L vs RT prices
+## 🧪 Testing
 
----
-
-## 💡 Trading Strategy Example
-
-**Scenario**: Expecting high RT prices during afternoon peak
-
-1. **Morning (before 11 AM)**: Submit DA buy order at $45/MWh for Hour 15 (3 PM)
-2. **DA Close**: Order fills at $44/MWh (below your $45 limit)
-3. **Real-Time**: RT prices average $52/MWh during Hour 15
-4. **P&L**: Profit = ($52 - $44) × Quantity = $8/MWh profit
-
----
-
-## 🧪 Development
-
-### Run Tests
 ```bash
+# Backend tests
 cd backend
 pytest
 
-cd ../frontend
-npm test
+# Test position validation
+pytest tests/test_position_manager.py
+
+# Test data source modes
+pytest tests/test_market_data.py
 ```
 
-### Database Schema
-- `market_da`: Day-ahead hourly prices
-- `market_rt`: Real-time 5-minute prices  
-- `orders`: Trading orders with status
-- `fills`: Executed trades with prices
+## 🔧 Configuration
 
----
+### Backend (.env)
+```env
+# Data Source (STRICT MODE)
+USE_REAL_DATA=true              # true for real data, false for mock
+GRIDSTATUS_API_KEY=your_key     # Required if USE_REAL_DATA=true
 
-## 📊 Screenshots
+# Database
+DATABASE_URL=sqlite:///./data/trading.db
 
-### Dashboard - Market Overview
-- Dual-axis chart showing DA hourly vs RT 5-minute prices
-- Order book visualization
-- Key performance indicators
+# Market Settings
+DEFAULT_NODE=PJM_RTO
+MARKET_TIMEZONE=America/New_York
+ORDER_CUTOFF_HOUR=11
+MAX_ORDERS_PER_HOUR=10
+```
 
-### Orders - Trading Interface  
-- Order entry form with validation
-- Orders table with status tracking
-- Per-hour order count limits
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:8000
+```
 
-### Analytics - Performance Review
-- P&L breakdown by hour and day
-- Trading statistics and win rates
-- Performance comparison charts
+## 📈 Roadmap
 
----
-
-## 🗺️ Roadmap
-
-- **Phase 1**: ✅ Core trading platform (DA orders, RT offsetting, P&L)
-- **Phase 2**: 🚧 Advanced analytics (portfolio optimization, risk metrics)
-- **Phase 3**: 📋 Multi-node support, live data feeds
-- **Phase 4**: 📋 Machine learning price predictions, automated strategies
-
----
+- [x] Phase 1: Two-market architecture
+- [x] Phase 2: Position validation (no naked shorts)
+- [x] Phase 3: Real-time market countdown/locking
+- [x] Phase 4: Strict data source control
+- [x] Phase 5: GridStatus.io API integration
+- [ ] Phase 6: Advanced analytics and ML predictions
+- [ ] Phase 7: Multi-node arbitrage support
+- [ ] Phase 8: Risk management tools
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -m 'Add feature'`
-4. Push branch: `git push origin feature-name` 
-5. Submit a Pull Request
-
----
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
+MIT License - see [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **[GridStatus.io](https://gridstatus.io)** - Real-time grid data API
-- **[Arco Design](https://arco.design)** - React UI component library
-- **[FastAPI](https://fastapi.tiangolo.com)** - Modern Python web framework
+- [Arco Design](https://arco.design) - UI component library
+- [FastAPI](https://fastapi.tiangolo.com) - Modern web API framework
+- [Recharts](https://recharts.org) - Charting library
+- [GridStatus.io](https://gridstatus.io) - Real energy market data
+
+## 📞 Support
+
+For issues or questions:
+- Open an issue on GitHub
+- Check API docs at http://localhost:8000/docs
+- Review the [Trading Strategies Guide](docs/TRADING_STRATEGIES.md)
 
 ---
 
-**Ready to start trading? Follow the setup instructions above and begin your virtual energy trading journey!** ⚡💰
+**Built for CVector Energy Trading Assessment** | Demonstrating expertise in full-stack development, financial logic validation, and energy market simulation
