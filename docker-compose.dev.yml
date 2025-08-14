@@ -1,0 +1,46 @@
+# Docker Compose Development Override
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Backend Development Overrides
+  backend:
+    build:
+      context: ./backend
+      target: development
+    environment:
+      - DEBUG=True
+      - LOG_LEVEL=DEBUG
+      - CORS_ORIGINS=["http://localhost:5173", "http://localhost:3000"]
+    volumes:
+      # Mount source code for hot reloading
+      - ./backend:/app
+      - backend_venv:/app/.venv  # Use named volume for venv
+    depends_on: []
+
+  # Frontend Development Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: energy-trader-frontend-dev
+    ports:
+      - "5173:5173"  # Vite dev server port
+    volumes:
+      # Mount source code for hot reloading
+      - ./frontend:/app
+      - frontend_modules:/app/node_modules  # Use named volume for node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - energy_trader_network
+
+# Additional volumes for development
+volumes:
+  backend_venv:
+    driver: local
+  frontend_modules:
+    driver: local

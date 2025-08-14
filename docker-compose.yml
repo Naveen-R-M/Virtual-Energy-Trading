@@ -1,0 +1,52 @@
+# Docker Compose for Virtual Energy Trading Platform
+
+services:
+  backend:
+    build: ./backend
+    container_name: energy-trader-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/energy_trader.db
+      - DEFAULT_NODE=PJM_RTO
+      - MARKET_TIMEZONE=America/New_York
+      - ORDER_CUTOFF_HOUR=11
+      - MAX_ORDERS_PER_HOUR=10
+      - DEBUG=True
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+      # Mount source code for hot reloading
+      - ./backend:/app:cached
+    networks:
+      - energy_trader_network
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  frontend:
+    build: ./frontend
+    container_name: energy-trader-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      # Mount source code for hot reloading
+      - ./frontend:/app:cached
+      - /app/node_modules
+    networks:
+      - energy_trader_network
+
+volumes:
+  backend_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  energy_trader_network:
+    driver: bridge

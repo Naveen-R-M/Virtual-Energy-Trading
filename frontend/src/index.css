@@ -1,0 +1,707 @@
+/* Modern Virtual Energy Trader - Enhanced Styling */
+
+/* CSS Variables for consistent theming */
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+  --neutral-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
+  
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 20px;
+  
+  --transition-fast: all 0.2s ease;
+  --transition-normal: all 0.3s ease;
+  --transition-slow: all 0.4s ease;
+}
+
+/* Global styles with modern aesthetics */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #667eea, #764ba2);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5a67d8, #6b46c1);
+}
+
+/* Enhanced card styling with glassmorphism */
+.arco-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-normal);
+  overflow: hidden;
+}
+
+.arco-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.arco-card .arco-card-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(248, 250, 252, 0.8));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+}
+
+.arco-card .arco-card-body {
+  padding: 24px;
+}
+
+/* Modern button styling */
+.arco-btn-primary {
+  background: var(--primary-gradient);
+  border: none;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-normal);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.arco-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.arco-btn-primary:hover::before {
+  left: 100%;
+}
+
+.arco-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.arco-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* KPI Cards with modern gradients */
+.kpi-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius-lg);
+  transition: var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary-gradient);
+}
+
+.kpi-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Enhanced statistics */
+.arco-statistic-title {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.arco-statistic-content {
+  font-weight: 700;
+  font-size: 32px;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Modern table styling */
+.arco-table {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.arco-table-thead > tr > th {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  font-weight: 600;
+  color: #475569;
+  border: none;
+  padding: 16px 12px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.arco-table-tbody > tr {
+  transition: var(--transition-fast);
+}
+
+.arco-table-tbody > tr:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+  transform: scale(1.01);
+}
+
+.arco-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  padding: 16px 12px;
+}
+
+/* Enhanced tags with modern styling */
+.arco-tag {
+  border-radius: var(--border-radius-md);
+  font-weight: 600;
+  padding: 6px 12px;
+  border: none;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+}
+
+.arco-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Status-specific tag colors */
+.arco-tag[color="green"] {
+  background: var(--success-gradient);
+  color: white;
+}
+
+.arco-tag[color="red"] {
+  background: var(--danger-gradient);
+  color: white;
+}
+
+.arco-tag[color="orange"] {
+  background: var(--warning-gradient);
+  color: white;
+}
+
+.arco-tag[color="blue"] {
+  background: var(--primary-gradient);
+  color: white;
+}
+
+/* Modern form styling */
+.arco-form-item {
+  margin-bottom: 24px;
+}
+
+.arco-form-item-label-text {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.arco-input,
+.arco-select-view-single,
+.arco-input-number {
+  border-radius: var(--border-radius-md);
+  border: 2px solid rgba(0, 0, 0, 0.05);
+  transition: var(--transition-normal);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.arco-input:focus,
+.arco-select-view-single:focus,
+.arco-input-number:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Sidebar enhancements with glassmorphism */
+.arco-layout-sider {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important;
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.arco-menu {
+  background: transparent !important;
+  border: none !important;
+}
+
+.arco-menu-item {
+  margin: 4px 12px;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition-normal);
+  backdrop-filter: blur(10px);
+}
+
+.arco-menu-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+}
+
+.arco-menu-item-selected {
+  background: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: var(--shadow-md);
+  transform: translateX(8px);
+}
+
+/* Header enhancements */
+.arco-layout-header {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Alert styling with modern design */
+.arco-alert {
+  border-radius: var(--border-radius-lg);
+  border: none;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+}
+
+.arco-alert-success {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+  border-left: 4px solid #22c55e;
+}
+
+.arco-alert-warning {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(245, 101, 101, 0.1));
+  border-left: 4px solid #f59e0b;
+}
+
+.arco-alert-info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+  border-left: 4px solid #3b82f6;
+}
+
+/* Progress bar enhancements */
+.arco-progress-line-outer {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.arco-progress-line-inner {
+  background: var(--primary-gradient);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.arco-progress-line-inner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Modern badge styling */
+.arco-badge-count {
+  background: var(--primary-gradient);
+  border: 2px solid white;
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
+}
+
+/* Chart container with glassmorphism */
+.chart-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--primary-gradient);
+}
+
+/* Enhanced status indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  position: relative;
+}
+
+.status-indicator.online {
+  background: radial-gradient(circle, #22c55e, #16a34a);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  animation: pulse-glow 2s infinite;
+}
+
+.status-indicator.offline {
+  background: radial-gradient(circle, #ef4444, #dc2626);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.status-indicator.warning {
+  background: radial-gradient(circle, #f59e0b, #d97706);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+/* Market price styling with modern typography */
+.market-price {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-positive {
+  color: #22c55e;
+  text-shadow: 0 1px 2px rgba(34, 197, 94, 0.2);
+}
+
+.price-negative {
+  color: #ef4444;
+  text-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+.price-neutral {
+  color: #6b7280;
+}
+
+/* Enhanced order form with modern styling */
+.order-form {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.order-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary-gradient);
+}
+
+/* Order summary with modern card design */
+.order-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: var(--transition-fast);
+}
+
+.order-summary-item:hover {
+  background: rgba(102, 126, 234, 0.03);
+  border-radius: var(--border-radius-sm);
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.order-summary-item:last-child {
+  border-bottom: none;
+  font-weight: 700;
+  padding-top: 20px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+  border-radius: var(--border-radius-md);
+  margin-top: 16px;
+}
+
+/* Modern animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Modern grid layout */
+.modern-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+/* Enhanced chart styling */
+.recharts-wrapper {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.05));
+}
+
+.recharts-cartesian-grid line {
+  stroke: rgba(0, 0, 0, 0.05);
+  stroke-dasharray: 3 3;
+}
+
+.recharts-tooltip-wrapper {
+  filter: drop-shadow(var(--shadow-lg));
+}
+
+/* Custom tooltip styling */
+.custom-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+}
+
+/* Modern loading states */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: #6b7280;
+}
+
+.arco-spin {
+  color: #667eea;
+}
+
+/* Responsive design improvements */
+@media (max-width: 1200px) {
+  .arco-card .arco-card-body {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .arco-layout-sider {
+    width: 200px !important;
+  }
+  
+  .arco-card .arco-card-body {
+    padding: 16px;
+  }
+  
+  .order-form {
+    padding: 24px;
+  }
+  
+  .kpi-card {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .arco-statistic-content {
+    font-size: 24px;
+  }
+  
+  .arco-card .arco-card-header {
+    padding: 16px;
+  }
+  
+  .arco-card .arco-card-body {
+    padding: 12px;
+  }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+  }
+}
+
+/* Special styling for specific elements */
+.market-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 20px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.trading-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.trading-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+}
+
+.trading-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--primary-gradient);
+}
+
+/* Enhanced data visualization */
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: var(--border-radius-md);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: #475569;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Print styles */
+@media print {
+  .arco-layout-sider {
+    display: none;
+  }
+  
+  .arco-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}
