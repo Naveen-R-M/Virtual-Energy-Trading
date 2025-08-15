@@ -225,6 +225,60 @@ def insert_sample_nodes(session):
         session.add(node)
     session.commit()
 
+# ==================== PJM SETTLEMENT COMPLIANCE MODELS ====================
+# Enhanced models for proper PJM settlement mechanics
+
+class PJMSettlementData(SQLModel, table=True):
+    """Track provisional vs verified settlement data"""
+    __tablename__ = "pjm_settlement_data"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pnode_id: str = Field(index=True, description="PJM Pnode ID")
+    timestamp_utc: datetime = Field(index=True, description="5-minute timestamp")
+    
+    # Data sources
+    provisional_lmp: Optional[float] = Field(default=None, description="Real-time provisional LMP")
+    verified_lmp: Optional[float] = Field(default=None, description="Final verified LMP")
+    
+    # Data quality
+    is_verified: bool = Field(default=False, index=True)
+    data_source: str = Field(description="real_time_5min or settlements_verified")
+    
+    # LMP components
+    energy_component: Optional[float] = Field(default=None)
+    congestion_component: Optional[float] = Field(default=None)
+    loss_component: Optional[float] = Field(default=None)
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    verified_at: Optional[datetime] = Field(default=None)
+
+# Enhanced trading order with PJM compliance tracking
+class PJMOrderSettlement(SQLModel, table=True):
+    """Track PJM settlement details for orders"""
+    __tablename__ = "pjm_order_settlements"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    order_id: int = Field(foreign_key="trading_orders.id", index=True)
+    
+    # P&L tracking with PJM compliance
+    provisional_pnl: Optional[float] = Field(default=None, description="Intraday provisional P&L")
+    verified_pnl: Optional[float] = Field(default=None, description="Final verified P&L")
+    bucket_pnl_details: Optional[str] = Field(default=None, description="JSON of 5-min bucket P&L")
+    
+    # Settlement metadata
+    pnl_calculation_method: str = Field(default="bucket_by_bucket", description="Calculation method used")
+    data_quality_status: str = Field(default="provisional", description="Data quality indicator")
+    settlement_status: str = Field(default="provisional", description="provisional or verified")
+    
+    # Compliance tracking
+    buckets_calculated: int = Field(default=0, description="Number of 5-min buckets processed")
+    missing_intervals: int = Field(default=0, description="Number of missing RT intervals")
+    
+    # Timestamps
+    calculated_at: datetime = Field(default_factory=datetime.utcnow)
+    verified_at: Optional[datetime] = Field(default=None)
+
 # Validation functions
 def validate_da_order_timing(hour_start_utc: datetime) -> bool:
     """Validate Day-Ahead order timing (before 11 AM cutoff)"""

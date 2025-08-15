@@ -309,7 +309,55 @@ export const pjmAPI = {
     
   // System status
   getStatus: () => 
-    api.get('/pjm/status')
+    api.get('/pjm/status'),
+    
+  // PJM Compliance endpoints
+  compliance: {
+    // Get PJM-compliant P&L with bucket-by-bucket calculation
+    getPnL: (pnodeId, date, useVerified = false) => 
+      api.get(`/pjm/compliance/pnl/${pnodeId}`, { 
+        params: { date, use_verified: useVerified } 
+      }),
+      
+    // Get settlement summary with provisional vs verified
+    getSettlementSummary: (pnodeId, date) => 
+      api.get(`/pjm/compliance/settlement-summary/${pnodeId}`, { 
+        params: { date } 
+      }),
+      
+    // Validate PJM compliance
+    validateCompliance: () => 
+      api.get('/pjm/compliance/validation')
+  },
+  
+  // Enhanced features endpoints
+  enhanced: {
+    // Get price decomposition (Energy/Congestion/Loss)
+    getPriceDecomposition: (pnodeId, timestamp = null) => 
+      api.get(`/pjm/enhanced/price-decomposition/${pnodeId}`, {
+        params: timestamp ? { timestamp } : {}
+      }),
+      
+    // Get transmission constraints
+    getTransmissionConstraints: (pnodeId, hour = null) => 
+      api.get(`/pjm/enhanced/transmission-constraints/${pnodeId}`, {
+        params: hour ? { hour } : {}
+      }),
+      
+    // Get market status with holidays/maintenance/staleness
+    getMarketStatus: () => 
+      api.get('/pjm/enhanced/market-status'),
+      
+    // Get enhanced watchlist with all features
+    getEnhancedWatchlist: (userId = 'demo_user', options = {}) => 
+      api.get('/pjm/enhanced/watchlist-with-features', {
+        params: {
+          user_id: userId,
+          include_decomposition: options.decomposition !== false,
+          include_constraints: options.constraints !== false
+        }
+      })
+  }
 }
 
 export default api

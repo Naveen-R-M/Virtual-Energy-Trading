@@ -8,12 +8,15 @@ import {
   IconSettings,
   IconUser,
   IconNotification,
-  IconEye
+  IconEye,
+  IconCheckCircle
 } from '@arco-design/web-react/icon'
 import enUS from '@arco-design/web-react/es/locale/en-US'
 import Dashboard from './pages/Dashboard'
 import OrderManagement from './pages/OrderManagement'
 import WatchlistDashboard from './pages/WatchlistDashboard'
+import PJMComplianceWatchlist from './pages/PJMComplianceWatchlist'
+import EnhancedPJMDashboard from './pages/EnhancedPJMDashboard'
 import '@arco-design/web-react/dist/css/arco.css'
 import './index.css'
 import './webull-theme.css'
@@ -36,6 +39,16 @@ function AppContent() {
       key: '/watchlist',
       icon: <IconEye />,
       title: 'Watchlist'
+    },
+    {
+      key: '/pjm-compliance',
+      icon: <IconCheckCircle />,
+      title: 'PJM Compliance'
+    },
+    {
+      key: '/enhanced-pjm',
+      icon: <IconSettings />,
+      title: 'Enhanced PJM'
     },
     {
       key: '/orders',
@@ -134,6 +147,8 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/watchlist" element={<WatchlistDashboard />} />
+          <Route path="/pjm-compliance" element={<PJMComplianceWatchlist />} />
+          <Route path="/enhanced-pjm" element={<EnhancedPJMDashboard />} />
           <Route path="/orders" element={<OrderManagement />} />
           <Route path="/settings" element={
             <Card className="webull-card" style={{ textAlign: 'center', padding: 60 }}>
