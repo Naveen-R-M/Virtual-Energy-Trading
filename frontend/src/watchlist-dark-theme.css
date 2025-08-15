@@ -1,0 +1,250 @@
+/* Enhanced Watchlist Styling for Better Dark Theme Visibility */
+
+/* Node ticker cards */
+.node-ticker {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid #444 !important;
+  transition: all 0.2s ease;
+}
+
+.node-ticker:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: #0066ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
+}
+
+/* Button improvements */
+.arco-btn-text {
+  color: #cccccc !important;
+}
+
+.arco-btn-text:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.arco-btn-primary {
+  background: #0066ff !important;
+  border-color: #0066ff !important;
+  color: white !important;
+}
+
+.arco-btn-primary:hover {
+  background: #0052cc !important;
+  border-color: #0052cc !important;
+}
+
+.arco-btn-outline {
+  border-color: #555 !important;
+  color: #cccccc !important;
+}
+
+.arco-btn-outline:hover {
+  border-color: #0066ff !important;
+  color: #0066ff !important;
+  background: rgba(0, 102, 255, 0.1) !important;
+}
+
+/* Text improvements */
+.arco-typography {
+  color: #ffffff !important;
+}
+
+.arco-typography-secondary {
+  color: #cccccc !important;
+}
+
+/* Title improvements */
+h2, h3, h4, .arco-typography-title {
+  color: #ffffff !important;
+}
+
+/* Input and form improvements */
+.arco-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: #555 !important;
+  color: #ffffff !important;
+}
+
+.arco-input:focus {
+  border-color: #0066ff !important;
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2) !important;
+}
+
+.arco-input::placeholder {
+  color: #999 !important;
+}
+
+/* Select dropdown improvements */
+.arco-select {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: #555 !important;
+  color: #ffffff !important;
+}
+
+.arco-select:hover,
+.arco-select-focused {
+  border-color: #0066ff !important;
+}
+
+.arco-select-view {
+  color: #ffffff !important;
+}
+
+/* Card improvements */
+.webull-card {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid #333 !important;
+}
+
+/* Modal improvements */
+.arco-modal {
+  background: #1a1a1a !important;
+}
+
+.arco-modal-header {
+  background: #1a1a1a !important;
+  border-bottom: 1px solid #333 !important;
+}
+
+.arco-modal-body {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.arco-modal-footer {
+  background: #1a1a1a !important;
+  border-top: 1px solid #333 !important;
+}
+
+/* Tag improvements */
+.arco-tag {
+  color: #ffffff !important;
+  border: 1px solid #555 !important;
+}
+
+/* Tooltip improvements */
+.arco-tooltip {
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  border: 1px solid #444 !important;
+}
+
+/* Chart tooltip improvements */
+.custom-tooltip {
+  background: rgba(0, 0, 0, 0.9) !important;
+  border: 1px solid #444 !important;
+  border-radius: 4px;
+  padding: 8px !important;
+  color: #ffffff !important;
+}
+
+/* Summary stats improvements */
+.watchlist-stats {
+  color: #ffffff !important;
+}
+
+.watchlist-stats .value {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.watchlist-stats .label {
+  color: #cccccc !important;
+}
+
+/* Alert improvements */
+.arco-alert-success {
+  background: rgba(0, 255, 0, 0.1) !important;
+  border-color: #00cc00 !important;
+  color: #ffffff !important;
+}
+
+.arco-alert-info {
+  background: rgba(0, 102, 255, 0.1) !important;
+  border-color: #0066ff !important;
+  color: #ffffff !important;
+}
+
+/* Progress bar improvements */
+.arco-progress-circle-path {
+  stroke: #0066ff !important;
+}
+
+.arco-progress-line-outer {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.arco-progress-line-inner {
+  background: #0066ff !important;
+}
+
+/* Spin loading improvements */
+.arco-spin-dot {
+  color: #0066ff !important;
+}
+
+/* Table improvements for better visibility */
+.arco-table {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: #ffffff !important;
+}
+
+.arco-table-thead th {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #444 !important;
+}
+
+.arco-table-tbody td {
+  border-bottom: 1px solid #333 !important;
+  color: #ffffff !important;
+}
+
+.arco-table-tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Space component improvements */
+.arco-space-item {
+  color: inherit !important;
+}
+
+/* Specific improvements for dark theme compatibility */
+.arco-tabs-tab {
+  color: #cccccc !important;
+}
+
+.arco-tabs-tab:hover {
+  color: #ffffff !important;
+}
+
+.arco-tabs-tab-active {
+  color: #0066ff !important;
+}
+
+/* Fix for invisible text in forms */
+.arco-form-item-label {
+  color: #ffffff !important;
+}
+
+/* Badge improvements */
+.arco-badge-count {
+  background: #ff4d4f !important;
+  color: #ffffff !important;
+}
+
+/* Notification improvements */
+.arco-notification {
+  background: rgba(0, 0, 0, 0.9) !important;
+  border: 1px solid #444 !important;
+  color: #ffffff !important;
+}
+
+/* Message improvements */
+.arco-message {
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: #ffffff !important;
+  border: 1px solid #444 !important;
+}

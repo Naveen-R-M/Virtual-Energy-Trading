@@ -265,4 +265,51 @@ export const marketUtils = {
   }
 }
 
+// PJM Watchlist API functions
+export const pjmAPI = {
+  // Get all PJM nodes
+  getNodes: (params = {}) => 
+    api.get('/pjm/nodes', { params }),
+    
+  // Sync nodes from GridStatus
+  syncNodes: () => 
+    api.post('/pjm/nodes/sync'),
+    
+  // Watchlist management
+  getWatchlist: (userId = 'demo_user') => 
+    api.get('/pjm/watchlist', { params: { user_id: userId } }),
+    
+  addToWatchlist: (data, userId = 'demo_user') => 
+    api.post('/pjm/watchlist', data, { params: { user_id: userId } }),
+    
+  removeFromWatchlist: (nodeId, userId = 'demo_user') => 
+    api.delete(`/pjm/watchlist/${nodeId}`, { params: { user_id: userId } }),
+    
+  updateWatchlistItem: (nodeId, data, userId = 'demo_user') => 
+    api.put(`/pjm/watchlist/${nodeId}`, data, { params: { user_id: userId } }),
+    
+  // Price data
+  getLatestPrices: (userId = 'demo_user') => 
+    api.get('/pjm/prices/latest', { params: { user_id: userId } }),
+    
+  getChartData: (nodeId, hours = 24, includeDayAhead = true) => 
+    api.get(`/pjm/prices/chart/${nodeId}`, { 
+      params: { hours, include_day_ahead: includeDayAhead } 
+    }),
+    
+  // Price alerts
+  getAlerts: (userId = 'demo_user', status = null) => 
+    api.get('/pjm/alerts', { params: { user_id: userId, status } }),
+    
+  createAlert: (data, userId = 'demo_user') => 
+    api.post('/pjm/alerts', data, { params: { user_id: userId } }),
+    
+  deleteAlert: (alertId, userId = 'demo_user') => 
+    api.delete(`/pjm/alerts/${alertId}`, { params: { user_id: userId } }),
+    
+  // System status
+  getStatus: () => 
+    api.get('/pjm/status')
+}
+
 export default api

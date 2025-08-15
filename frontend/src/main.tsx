@@ -5,7 +5,5 @@ import '@arco-design/web-react/dist/css/arco.css'
 import './webull-theme.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <App />
 )

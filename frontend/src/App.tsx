@@ -7,11 +7,13 @@ import {
   IconList, 
   IconSettings,
   IconUser,
-  IconNotification
+  IconNotification,
+  IconEye
 } from '@arco-design/web-react/icon'
 import enUS from '@arco-design/web-react/es/locale/en-US'
 import Dashboard from './pages/Dashboard'
 import OrderManagement from './pages/OrderManagement'
+import WatchlistDashboard from './pages/WatchlistDashboard'
 import '@arco-design/web-react/dist/css/arco.css'
 import './index.css'
 import './webull-theme.css'
@@ -29,6 +31,11 @@ function AppContent() {
       key: '/',
       icon: <IconDashboard />,
       title: 'Dashboard'
+    },
+    {
+      key: '/watchlist',
+      icon: <IconEye />,
+      title: 'Watchlist'
     },
     {
       key: '/orders',
@@ -126,6 +133,7 @@ function AppContent() {
       <Content style={{ padding: 24, overflow: 'auto', flex: 1 }}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/watchlist" element={<WatchlistDashboard />} />
           <Route path="/orders" element={<OrderManagement />} />
           <Route path="/settings" element={
             <Card className="webull-card" style={{ textAlign: 'center', padding: 60 }}>

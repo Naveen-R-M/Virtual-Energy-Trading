@@ -45,6 +45,10 @@ def create_database():
         print("🏪 Markets Configured:")
         print("   📅 Day-Ahead: Hourly slots, 11AM cutoff, 10 orders/hour")
         print("   ⚡ Real-Time: 5-min slots, continuous, 50 orders/slot")
+        print("   📊 PJM Watchlist: Robinhood-style price tracking")
+        
+        # Initialize PJM features
+        initialize_pjm_features()
         
         print()
         print("✅ Database is ready for trading!")
@@ -56,6 +60,26 @@ def create_database():
         print("   - Verify Python path and imports")
         print("   - Run from backend directory")
         sys.exit(1)
+
+def initialize_pjm_features():
+    """Initialize PJM-specific watchlist features"""
+    try:
+        print("\n📊 Initializing PJM Watchlist Features...")
+        
+        from app.models import insert_sample_pjm_nodes
+        from app.database import SessionLocal
+        
+        with SessionLocal() as session:
+            insert_sample_pjm_nodes(session)
+        
+        print("✅ PJM sample nodes created")
+        print("   - PJM RTO Hub (PJMRTO)")
+        print("   - Western Hub (WEST)")
+        print("   - Kearneys 138kV (KNY138KV)")
+        
+    except Exception as e:
+        print(f"⚠️ PJM initialization warning: {e}")
+        print("   PJM features may have limited functionality")
 
 def main():
     """Main initialization function."""

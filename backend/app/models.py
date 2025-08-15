@@ -5,7 +5,7 @@ Supports both Day-Ahead and Real-Time markets with proper constraints
 
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 from enum import Enum
 import uuid
 
@@ -43,6 +43,7 @@ class MarketPriceBase(SQLModel):
 class DayAheadPrice(MarketPriceBase, table=True):
     """Day-ahead market hourly prices"""
     __tablename__ = "market_da_prices"
+    __table_args__ = {'extend_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
     hour_start_utc: datetime = Field(index=True, description="Hour starting time in UTC")
@@ -52,6 +53,7 @@ class DayAheadPrice(MarketPriceBase, table=True):
 class RealTimePrice(MarketPriceBase, table=True):
     """Real-time market 5-minute prices"""
     __tablename__ = "market_rt_prices"
+    __table_args__ = {'extend_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
     timestamp_utc: datetime = Field(index=True, description="5-minute timestamp in UTC")
@@ -61,6 +63,7 @@ class RealTimePrice(MarketPriceBase, table=True):
 class TradingOrder(SQLModel, table=True):
     """Trading orders for both Day-Ahead and Real-Time markets"""
     __tablename__ = "trading_orders"
+    __table_args__ = {'extend_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
     order_id: str = Field(unique=True, index=True, default_factory=lambda: str(uuid.uuid4()))
@@ -101,6 +104,7 @@ class TradingOrder(SQLModel, table=True):
 class OrderFill(SQLModel, table=True):
     """Order fills and executions for both markets"""
     __tablename__ = "order_fills"
+    __table_args__ = {'extend_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
     order_id: int = Field(foreign_key="trading_orders.id", index=True)
@@ -127,6 +131,7 @@ class OrderFill(SQLModel, table=True):
 class PnLRecord(SQLModel, table=True):
     """P&L records for tracking performance"""
     __tablename__ = "pnl_records"
+    __table_args__ = {'extend_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(index=True)
@@ -159,6 +164,7 @@ class PnLRecord(SQLModel, table=True):
 class GridNode(SQLModel, table=True):
     """Grid node configuration and metadata"""
     __tablename__ = "grid_nodes"
+    __table_args__ = {'extend_existing': True}
     
     id: Optional[int] = Field(default=None, primary_key=True)
     node_code: str = Field(unique=True, index=True, description="Node code (e.g., PJM_RTO)")
@@ -271,3 +277,236 @@ def validate_order_limits(
         'max_count': max_orders,
         'remaining': max_orders - current_count
     }
+
+# ==================== PJM WATCHLIST MODELS ====================
+# New models for Robinhood-style PJM watchlist functionality
+
+class AlertType(str, Enum):
+    """Price alert types"""
+    ABOVE = "above"
+    BELOW = "below"
+    PERCENT_CHANGE = "percent_change"
+
+class AlertStatus(str, Enum):
+    """Alert status"""
+    ACTIVE = "active"
+    TRIGGERED = "triggered"
+    DISABLED = "disabled"
+
+# PJM Node Mapping and Information
+class PJMNode(SQLModel, table=True):
+    """PJM pricing nodes with ticker-style mapping"""
+    __tablename__ = "pjm_nodes"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    node_id: str = Field(unique=True, index=True, description="GridStatus node ID")
+    ticker_symbol: str = Field(unique=True, index=True, description="Generated ticker (e.g., KNY138T61)")
+    node_name: str = Field(description="Human-readable name")
+    zone: str = Field(description="PJM zone/region")
+    voltage_level: Optional[str] = Field(default=None, description="Voltage level")
+    node_type: str = Field(description="hub, zone, generator, etc.")
+    
+    # Metadata
+    is_active: bool = Field(default=True)
+    is_watchlist_eligible: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
+    
+    # Relationships
+    watchlist_items: List["WatchlistItem"] = Relationship(back_populates="node")
+    price_alerts: List["PriceAlert"] = Relationship(back_populates="node")
+    price_history: List["NodePriceSnapshot"] = Relationship(back_populates="node")
+
+# User Watchlists
+class WatchlistItem(SQLModel, table=True):
+    """User's watchlist of PJM nodes"""
+    __tablename__ = "watchlist_items"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True, description="User ID")
+    node_id: int = Field(foreign_key="pjm_nodes.id", index=True)
+    
+    # Display preferences
+    display_order: int = Field(default=0, description="Order in watchlist")
+    is_favorite: bool = Field(default=False)
+    custom_name: Optional[str] = Field(default=None, description="User's custom name for node")
+    
+    # Timestamps
+    added_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    node: PJMNode = Relationship(back_populates="watchlist_items")
+
+# Price Alerts
+class PriceAlert(SQLModel, table=True):
+    """Price threshold alerts for nodes"""
+    __tablename__ = "price_alerts"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    alert_id: str = Field(unique=True, index=True, default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = Field(index=True, description="User ID")
+    node_id: int = Field(foreign_key="pjm_nodes.id", index=True)
+    
+    # Alert configuration
+    alert_type: AlertType = Field(description="Type of alert")
+    threshold_value: float = Field(description="Threshold price or percentage")
+    status: AlertStatus = Field(default=AlertStatus.ACTIVE, index=True)
+    
+    # Alert metadata
+    message: Optional[str] = Field(default=None, description="Custom alert message")
+    is_recurring: bool = Field(default=False, description="Reset after triggering")
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    triggered_at: Optional[datetime] = Field(default=None)
+    last_checked: Optional[datetime] = Field(default=None)
+    
+    # Relationships
+    node: PJMNode = Relationship(back_populates="price_alerts")
+
+# Price History for Sparklines and Charts
+class NodePriceSnapshot(SQLModel, table=True):
+    """Historical price data for nodes (for sparklines and charts)"""
+    __tablename__ = "node_price_snapshots"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    node_id: int = Field(foreign_key="pjm_nodes.id", index=True)
+    
+    # Price data
+    timestamp_utc: datetime = Field(index=True, description="Price timestamp")
+    lmp_price: float = Field(description="Locational Marginal Price")
+    day_ahead_price: Optional[float] = Field(default=None, description="DA price for same hour")
+    
+    # Price components (from GridStatus)
+    energy_component: Optional[float] = Field(default=None)
+    congestion_component: Optional[float] = Field(default=None)
+    loss_component: Optional[float] = Field(default=None)
+    
+    # Calculated fields
+    price_change_5min: Optional[float] = Field(default=None, description="Change from 5 min ago")
+    price_change_1hour: Optional[float] = Field(default=None, description="Change from 1 hour ago")
+    price_change_24hour: Optional[float] = Field(default=None, description="Change from 24 hours ago")
+    
+    # Metadata
+    data_source: str = Field(default="gridstatus", description="Data source")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    node: PJMNode = Relationship(back_populates="price_history")
+
+# Watchlist Summary for API responses
+class WatchlistSummary(SQLModel):
+    """Summary data for watchlist display"""
+    node_id: int
+    ticker_symbol: str
+    node_name: str
+    custom_name: Optional[str] = None
+    current_price: float
+    price_change_5min: Optional[float] = None
+    price_change_percent: Optional[float] = None
+    day_ahead_price: Optional[float] = None
+    sparkline_data: List[float] = []
+    last_updated: datetime
+    is_favorite: bool = False
+
+# Helper functions for ticker generation
+def generate_ticker_symbol(node_name: str, node_id: str) -> str:
+    """Generate a stock-like ticker symbol from PJM node name"""
+    import re
+    
+    # Extract key components from node name
+    # Example: "KEARNEYS138 KV T61" -> "KNY138T61"
+    
+    # Remove common suffixes and prefixes
+    cleaned = node_name.upper()
+    cleaned = re.sub(r'\bKV\b|\bMW\b|\bGEN\b|\bTRANS\b|\bSUB\b|\bSTA\b', '', cleaned)
+    
+    # Extract letters and numbers
+    letters = re.findall(r'[A-Z]+', cleaned)
+    numbers = re.findall(r'\d+', cleaned)
+    
+    # Build ticker
+    ticker_parts = []
+    
+    # Take first 3-4 letters from main word
+    if letters:
+        main_word = letters[0]
+        if len(main_word) >= 4:
+            ticker_parts.append(main_word[:4])
+        elif len(main_word) >= 3:
+            ticker_parts.append(main_word[:3])
+        else:
+            ticker_parts.append(main_word)
+            if len(letters) > 1:
+                ticker_parts.append(letters[1][:2])
+    
+    # Add significant numbers
+    if numbers:
+        for num in numbers[:2]:  # Max 2 numbers
+            ticker_parts.append(num)
+    
+    ticker = ''.join(ticker_parts)
+    
+    # Ensure reasonable length (6-10 characters)
+    if len(ticker) > 10:
+        ticker = ticker[:10]
+    elif len(ticker) < 4:
+        # Fallback to node_id if too short
+        ticker = f"PJM{node_id[-4:]}"
+    
+    return ticker
+
+def create_pjm_node_from_gridstatus(node_data: Dict) -> PJMNode:
+    """Create PJMNode from GridStatus API response"""
+    node_id = str(node_data.get('node_id', ''))
+    node_name = str(node_data.get('node_name', ''))
+    
+    ticker = generate_ticker_symbol(node_name, node_id)
+    
+    return PJMNode(
+        node_id=node_id,
+        ticker_symbol=ticker,
+        node_name=node_name,
+        zone=node_data.get('zone', 'UNKNOWN'),
+        voltage_level=node_data.get('voltage_level'),
+        node_type=node_data.get('node_type', 'unknown'),
+        is_active=True,
+        is_watchlist_eligible=True
+    )
+
+# Database initialization functions
+def insert_sample_pjm_nodes(session):
+    """Insert sample PJM nodes for testing"""
+    from sqlmodel import select
+    
+    sample_nodes = [
+        {
+            'node_id': 'PJM_RTO',
+            'node_name': 'PJM RTO Hub',
+            'zone': 'RTO',
+            'node_type': 'hub'
+        },
+        {
+            'node_id': 'WESTERN_HUB',
+            'node_name': 'Western Hub',
+            'zone': 'WEST',
+            'node_type': 'hub'
+        },
+        {
+            'node_id': 'KEARNEYS138KV',
+            'node_name': 'Kearneys 138 KV T61',
+            'zone': 'PSEG',
+            'node_type': 'bus'
+        }
+    ]
+    
+    for node_data in sample_nodes:
+        existing = session.exec(
+            select(PJMNode).where(PJMNode.node_id == node_data['node_id'])
+        ).first()
+        
+        if not existing:
+            pjm_node = create_pjm_node_from_gridstatus(node_data)
+            session.add(pjm_node)
+    
+    session.commit()

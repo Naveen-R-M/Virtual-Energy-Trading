@@ -47,10 +47,12 @@ app.add_middleware(
 from .routes.market import router as market_router
 from .routes.orders import router as orders_router  
 from .routes.pnl import router as pnl_router
+from .routes.pjm import router as pjm_router  # New PJM watchlist routes
 
 app.include_router(market_router)
 app.include_router(orders_router)
 app.include_router(pnl_router)
+app.include_router(pjm_router)  # Add PJM watchlist endpoints
 
 @app.on_event("startup")
 async def startup_event():
