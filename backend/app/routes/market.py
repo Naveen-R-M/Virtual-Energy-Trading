@@ -113,6 +113,14 @@ async def get_real_time_prices(
         start_time = datetime.fromisoformat(start.replace("Z", "+00:00"))
         end_time = datetime.fromisoformat(end.replace("Z", "+00:00"))
         
+        # If start and end are the same (single point query), expand to 5-minute window
+        if start_time == end_time:
+            # Round down to nearest 5-minute interval
+            minutes = start_time.minute
+            rounded_minutes = (minutes // 5) * 5
+            start_time = start_time.replace(minute=rounded_minutes, second=0, microsecond=0)
+            end_time = start_time + timedelta(minutes=5)
+        
         # Validate time range (max 24 hours)
         if (end_time - start_time) > timedelta(hours=24):
             raise HTTPException(status_code=400, detail="Time range cannot exceed 24 hours")

@@ -3,9 +3,9 @@ Enhanced Database Models for Virtual Energy Trading Platform
 Supports both Day-Ahead and Real-Time markets with proper constraints
 """
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Session, select
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from enum import Enum
 import uuid
 
@@ -18,6 +18,25 @@ class OrderSide(str, Enum):
     """Order side enumeration"""
     BUY = "buy"
     SELL = "sell"
+
+class OrderType(str, Enum):
+    """Order type enumeration for deterministic matching"""
+    MARKET = "MKT"  # Market order - fill at any price
+    LIMIT = "LMT"   # Limit order - fill only at limit price or better
+
+class TimeInForce(str, Enum):
+    """Time in force enumeration"""
+    GTC = "GTC"  # Good Till Cancelled (default for trading day)
+    IOC = "IOC"  # Immediate or Cancel
+    DAY = "DAY"  # Good for trading day only
+
+class SessionState(str, Enum):
+    """Trading session state enumeration"""
+    PRE_MARKET = "pre_market"        # Before market open
+    PRE_11AM = "pre_11am"            # Market open, DA orders allowed
+    POST_11AM = "post_11am"          # After DA cutoff, RT only
+    MARKET_CLOSE = "market_close"    # After market close
+    SETTLEMENT = "settlement"        # Settlement period
 
 class OrderStatus(str, Enum):
     """Order status enumeration"""
@@ -83,8 +102,11 @@ class TradingOrder(SQLModel, table=True):
     
     # Order details
     side: OrderSide = Field(description="Buy or sell")
-    limit_price: float = Field(description="Limit price in $/MWh")
+    order_type: OrderType = Field(default=OrderType.LIMIT, description="Market or limit order")
+    limit_price: Optional[float] = Field(default=None, description="Limit price in $/MWh (required for limit orders)")
     quantity_mwh: float = Field(description="Quantity in MWh")
+    time_in_force: TimeInForce = Field(default=TimeInForce.GTC, description="Time in force")
+    expires_at: Optional[datetime] = Field(default=None, description="Expiry time for GTC orders")
     
     # Status and execution
     status: OrderStatus = Field(default=OrderStatus.PENDING, index=True)
@@ -510,6 +532,214 @@ def generate_ticker_symbol(node_name: str, node_id: str) -> str:
     
     return ticker
 
+# ==================== TRADING SESSION MANAGEMENT MODELS ====================
+# Models for capital tracking, session state, and daily P&L management
+
+class UserCapital(SQLModel, table=True):
+    """User capital and portfolio summary tracking"""
+    __tablename__ = "user_capital"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True, description="User identifier")
+    
+    # Capital tracking
+    starting_capital: float = Field(description="Starting capital for simulation")
+    current_capital: float = Field(description="Current available capital")
+    total_realized_pnl: float = Field(default=0.0, description="Cumulative realized P&L")
+    total_unrealized_pnl: float = Field(default=0.0, description="Current unrealized P&L")
+    
+    # Portfolio metrics
+    total_trades: int = Field(default=0, description="Total number of trades")
+    winning_trades: int = Field(default=0, description="Number of profitable trades")
+    max_drawdown: float = Field(default=0.0, description="Maximum drawdown experienced")
+    sharpe_ratio: Optional[float] = Field(default=None, description="Risk-adjusted return")
+    
+    # Session tracking
+    last_trading_date: datetime = Field(description="Last active trading date")
+    session_count: int = Field(default=0, description="Number of trading sessions")
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
+    
+class TradingSession(SQLModel, table=True):
+    """Daily trading session state and management"""
+    __tablename__ = "trading_sessions"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True, description="User identifier")
+    trading_date: datetime = Field(index=True, description="Trading date (YYYY-MM-DD)")
+    
+    # Session state
+    session_state: SessionState = Field(default=SessionState.PRE_MARKET, description="Current session state")
+    da_orders_enabled: bool = Field(default=True, description="Whether DA orders are allowed")
+    rt_orders_enabled: bool = Field(default=True, description="Whether RT orders are allowed")
+    
+    # Daily capital snapshot
+    starting_daily_capital: float = Field(description="Capital at start of trading day")
+    current_daily_capital: float = Field(description="Current capital for the day")
+    
+    # Daily P&L tracking
+    daily_realized_pnl: float = Field(default=0.0, description="Realized P&L for this trading day")
+    daily_unrealized_pnl: float = Field(default=0.0, description="Unrealized P&L for this trading day")
+    daily_gross_pnl: float = Field(default=0.0, description="Total daily P&L (realized + unrealized)")
+    
+    # Daily metrics
+    daily_trades: int = Field(default=0, description="Number of trades today")
+    daily_volume_mwh: float = Field(default=0.0, description="Total volume traded today")
+    
+    # Position tracking
+    open_da_positions: int = Field(default=0, description="Number of open DA positions")
+    open_rt_positions: int = Field(default=0, description="Number of open RT positions")
+    carryover_da_positions: int = Field(default=0, description="DA positions from previous day")
+    
+    # Session timing
+    market_open_time: Optional[datetime] = Field(default=None, description="When market opened")
+    da_cutoff_time: Optional[datetime] = Field(default=None, description="DA order cutoff time (11 AM ET)")
+    market_close_time: Optional[datetime] = Field(default=None, description="When market closed")
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
+    
+    # Unique constraint to ensure one session per user per day
+    __table_args__ = (
+        {'extend_existing': True},
+    )
+
+class DailyPnLSummary(SQLModel, table=True):
+    """Daily P&L summary and breakdown by market/node"""
+    __tablename__ = "daily_pnl_summary"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True, description="User identifier")
+    trading_date: datetime = Field(index=True, description="Trading date")
+    node: str = Field(index=True, description="Grid node")
+    
+    # Market breakdown
+    da_pnl: float = Field(default=0.0, description="Day-ahead market P&L")
+    rt_pnl: float = Field(default=0.0, description="Real-time market P&L")
+    settlement_pnl: float = Field(default=0.0, description="Settlement adjustments")
+    total_pnl: float = Field(description="Total P&L for this node/date")
+    
+    # Volume tracking
+    da_volume_mwh: float = Field(default=0.0, description="DA volume traded")
+    rt_volume_mwh: float = Field(default=0.0, description="RT volume traded")
+    net_position_mwh: float = Field(default=0.0, description="Net position at end of day")
+    
+    # Performance metrics
+    num_trades: int = Field(default=0, description="Number of trades for this node")
+    winning_trades: int = Field(default=0, description="Profitable trades")
+    avg_trade_size: float = Field(default=0.0, description="Average trade size")
+    
+    # Risk metrics
+    max_position_mwh: float = Field(default=0.0, description="Maximum position held")
+    drawdown: float = Field(default=0.0, description="Maximum drawdown for the day")
+    
+    # Data quality
+    provisional_data: bool = Field(default=True, description="Whether using provisional RT prices")
+    verified_at: Optional[datetime] = Field(default=None, description="When data was verified")
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = Field(default=None)
+
+# Session Management Helper Functions
+def get_or_create_user_capital(session: Session, user_id: str, starting_capital: float = 10000.0) -> UserCapital:
+    """Get existing user capital or create new with starting amount"""
+    
+    existing_capital = session.exec(
+        select(UserCapital).where(UserCapital.user_id == user_id)
+    ).first()
+    
+    if existing_capital:
+        return existing_capital
+    
+    # Create new user capital record
+    new_capital = UserCapital(
+        user_id=user_id,
+        starting_capital=starting_capital,
+        current_capital=starting_capital,
+        last_trading_date=datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    )
+    
+    session.add(new_capital)
+    session.commit()
+    session.refresh(new_capital)
+    
+    return new_capital
+
+def get_or_create_trading_session(
+    session: Session, 
+    user_id: str, 
+    trading_date: datetime,
+    starting_capital: float = 10000.0
+) -> TradingSession:
+    """Get existing trading session or create new for the trading day"""
+    
+    # Normalize trading date to midnight
+    normalized_date = trading_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    existing_session = session.exec(
+        select(TradingSession).where(
+            TradingSession.user_id == user_id,
+            TradingSession.trading_date == normalized_date
+        )
+    ).first()
+    
+    if existing_session:
+        return existing_session
+    
+    # Get or create user capital
+    user_capital = get_or_create_user_capital(session, user_id, starting_capital)
+    
+    # Create new trading session
+    new_session = TradingSession(
+        user_id=user_id,
+        trading_date=normalized_date,
+        starting_daily_capital=user_capital.current_capital,
+        current_daily_capital=user_capital.current_capital
+    )
+    
+    session.add(new_session)
+    session.commit()
+    session.refresh(new_session)
+    
+    return new_session
+
+def calculate_session_state(current_time: datetime) -> Tuple[SessionState, bool, bool]:
+    """Calculate current session state and order permissions - RT ALWAYS ENABLED"""
+    import pytz
+    
+    # Convert to Eastern Time (PJM timezone)
+    et = pytz.timezone('US/Eastern')
+    et_time = current_time.astimezone(et)
+    
+    # Define market hours
+    market_open = et_time.replace(hour=6, minute=0, second=0, microsecond=0)  # 6 AM ET
+    da_cutoff = et_time.replace(hour=11, minute=0, second=0, microsecond=0)   # 11 AM ET
+    market_close = et_time.replace(hour=23, minute=59, second=59, microsecond=0) # 11:59 PM ET (almost 24/7)
+    
+    # Determine session state
+    if et_time < market_open:
+        session_state = SessionState.PRE_MARKET
+        da_orders_enabled = False
+        rt_orders_enabled = True  # RT ALWAYS enabled
+    elif et_time < da_cutoff:
+        session_state = SessionState.PRE_11AM
+        da_orders_enabled = True
+        rt_orders_enabled = True  # RT ALWAYS enabled
+    elif et_time < market_close:
+        session_state = SessionState.POST_11AM
+        da_orders_enabled = False
+        rt_orders_enabled = True  # RT ALWAYS enabled
+    else:
+        session_state = SessionState.MARKET_CLOSE
+        da_orders_enabled = False
+        rt_orders_enabled = True  # RT STILL enabled (24/7 trading)
+    
+    return session_state, da_orders_enabled, rt_orders_enabled
+
 def create_pjm_node_from_gridstatus(node_data: Dict) -> PJMNode:
     """Create PJMNode from GridStatus API response"""
     node_id = str(node_data.get('node_id', ''))
@@ -531,8 +761,6 @@ def create_pjm_node_from_gridstatus(node_data: Dict) -> PJMNode:
 # Database initialization functions
 def insert_sample_pjm_nodes(session):
     """Insert sample PJM nodes for testing"""
-    from sqlmodel import select
-    
     sample_nodes = [
         {
             'node_id': 'PJM_RTO',

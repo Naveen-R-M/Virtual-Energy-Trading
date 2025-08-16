@@ -48,11 +48,27 @@ from .routes.market import router as market_router
 from .routes.orders import router as orders_router  
 from .routes.pnl import router as pnl_router
 from .routes.pjm import router as pjm_router  # New PJM watchlist routes
+from .routes.api_status import router as api_status_router  # API key monitoring routes
+from .routes.debug import router as debug_router  # Debug endpoints
+from .routes.trading_state import router as trading_state_router  # PJM trading clock
+from .routes.internal.price_ingestion import router as internal_router  # Internal price ingestion
+from .routes.session import router as session_router  # Trading session management
+from .routes.frontend_data import router as frontend_router  # Frontend data endpoints
+from .routes.test import router as test_router  # Test endpoints
+from .routes.orders_enhanced import router as orders_enhanced_router  # Enhanced orders with P&L
 
 app.include_router(market_router)
 app.include_router(orders_router)
 app.include_router(pnl_router)
 app.include_router(pjm_router)  # Add PJM watchlist endpoints
+app.include_router(api_status_router)  # Add API key monitoring endpoints
+app.include_router(debug_router)  # Add debug endpoints
+app.include_router(trading_state_router)  # Add PJM trading state endpoints
+app.include_router(internal_router)  # Add internal price ingestion endpoints
+app.include_router(session_router)  # Add trading session management endpoints
+app.include_router(frontend_router)  # Add frontend data endpoints
+app.include_router(test_router)  # Add test endpoints
+app.include_router(orders_enhanced_router)  # Add enhanced orders with real P&L
 
 @app.on_event("startup")
 async def startup_event():

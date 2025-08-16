@@ -102,11 +102,11 @@ function AppContent() {
             <Badge count={3} size="small">
               <IconNotification style={{ fontSize: 16, cursor: 'pointer' }} />
             </Badge>
-            <Avatar size={32} style={{ background: '#ffffff', color: '#000000' }}>
+            <Avatar size={32} style={{ background: '#ff7b00ff', color: '#000000' }}>
               <IconUser />
             </Avatar>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>Demo Trader</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>Naveen</div>
               <Text type="secondary" style={{ fontSize: 11 }}>
                 Active Session
               </Text>

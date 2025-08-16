@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from decimal import Decimal
 import logging
+import os  # Add os import for environment variables
 from ..models import (
     TradingOrder, OrderStatus, OrderSide, MarketType
 )
@@ -36,7 +37,10 @@ class PositionManager:
         time_slot: datetime
     ) -> Dict:
         """
-        Calculate net position for a specific time slot
+        Calculate net position for validation
+        
+        For RT orders: Calculate DAILY net position (not per-slot)
+        For DA orders: Calculate per-hour position
         
         Returns:
             Dict with position details:
@@ -45,27 +49,32 @@ class PositionManager:
             - sell_volume: Total sell volume
             - filled_orders: List of filled orders
         """
-        # Determine time window based on market type
-        if market == MarketType.DAY_AHEAD:
-            # For DA, positions are per hour
+        if market == MarketType.REAL_TIME:
+            # For RT: Use DAILY net position to allow intraday trading
+            today_start = time_slot.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            statement = select(TradingOrder).where(
+                TradingOrder.user_id == user_id,
+                TradingOrder.node == node,
+                TradingOrder.market == MarketType.REAL_TIME,
+                TradingOrder.status == OrderStatus.FILLED,
+                TradingOrder.hour_start_utc >= today_start,
+                TradingOrder.hour_start_utc < today_end
+            )
+        else:
+            # For DA: Use per-hour position (original logic)
             slot_start = time_slot.replace(minute=0, second=0, microsecond=0)
             slot_end = slot_start + timedelta(hours=1)
-            time_field = TradingOrder.hour_start_utc
-        else:
-            # For RT, positions are per 5-minute slot
-            slot_start = time_slot
-            slot_end = slot_start + timedelta(minutes=5)
-            time_field = TradingOrder.time_slot_utc
-        
-        # Query filled orders for this slot
-        statement = select(TradingOrder).where(
-            TradingOrder.user_id == user_id,
-            TradingOrder.node == node,
-            TradingOrder.market == market,
-            TradingOrder.status == OrderStatus.FILLED,
-            time_field >= slot_start,
-            time_field < slot_end
-        )
+            
+            statement = select(TradingOrder).where(
+                TradingOrder.user_id == user_id,
+                TradingOrder.node == node,
+                TradingOrder.market == MarketType.DAY_AHEAD,
+                TradingOrder.status == OrderStatus.FILLED,
+                TradingOrder.hour_start_utc >= slot_start,
+                TradingOrder.hour_start_utc < slot_end
+            )
         
         filled_orders = self.session.exec(statement).all()
         

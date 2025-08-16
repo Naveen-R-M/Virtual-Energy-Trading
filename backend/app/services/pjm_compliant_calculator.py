@@ -252,7 +252,7 @@ class PJMCompliantPnLCalculator:
                     # This formula works correctly for both BUY and SELL:
                     # - BUY: If RT > DA, P&L negative (pay more in RT)
                     # - SELL: If RT > DA, P&L positive (sold high in DA, cheaper in RT)
-                    if order.side == OrderSide.BUY:\n                        # BUY: Profit when RT < DA (bought cheap in DA)\n                        bucket_pnl = (da_price - rt_price) * bucket_quantity\n                    else:  # SELL\n                        # SELL: Profit when RT < DA (sold high in DA, replaced cheap in RT)\n                        bucket_pnl = (da_price - rt_price) * bucket_quantity
+                    bucket_pnl = (da_price - rt_price) * bucket_quantity
                     
                     bucket_pnl_sum += bucket_pnl
                     
@@ -508,11 +508,12 @@ class PJMCompliantPnLCalculator:
             
             quality_flags = pnl_data.get("quality_flags", [])
             if quality_flags:
+                quality_hours = [f"H{flag['hour']}" for flag in quality_flags[:3]]
                 badges.append({
                     "type": "info",
                     "text": f"PARTIAL ({len(quality_flags)} hours incomplete)",
                     "color": "#ffaa00",
-                    "tooltip": f"Some hours have incomplete data: {', '.join([f'H{f[\"hour\"]}' for f in quality_flags[:3]])}"
+                    "tooltip": f"Some hours have incomplete data: {', '.join(quality_hours)}"
                 })
             
             # Settlement difference badge

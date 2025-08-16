@@ -218,10 +218,13 @@ h2, h3, h4, .arco-typography-title {
 
 .arco-tabs-tab:hover {
   color: #ffffff !important;
+  background: transparent !important; /* Remove background on hover */
+  border-bottom: 2px solid #0066ff !important; /* Add blue underline on hover */
 }
 
 .arco-tabs-tab-active {
   color: #0066ff !important;
+  border-bottom: 2px solid #0066ff !important; /* Ensure active tab also has underline */
 }
 
 /* Fix for invisible text in forms */

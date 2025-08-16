@@ -3,18 +3,21 @@ Trading Orders API Routes for Virtual Energy Trading Platform
 Handles order creation, listing, and management for both markets
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Body, BackgroundTasks
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from ..database import get_session
 from ..models import (
-    TradingOrder, OrderStatus, OrderSide, MarketType,
+    TradingOrder, OrderStatus, OrderSide, MarketType, OrderType, TimeInForce,
     validate_da_order_timing, validate_order_limits
 )
 from ..services.matching_engine import MatchingEngine
 from ..services.position_manager import PositionManager
+from ..services.trading_session_manager import TradingSessionManager
+from ..services.rt_interval_manager import RTIntervalManager
+from ..services.rt_settlement_service import RTSettlementService
 import logging
 import pytz
 
@@ -29,9 +32,19 @@ class OrderRequest(BaseModel):
     node: str = Field(default="PJM_RTO", description="Grid node")
     market: MarketType = Field(..., description="Market type: day-ahead or real-time")
     side: OrderSide = Field(..., description="Order side: buy or sell")
-    limit_price: float = Field(..., gt=0, description="Limit price in $/MWh")
+    order_type: OrderType = Field(default=OrderType.LIMIT, description="Order type: MKT or LMT")
+    limit_price: Optional[float] = Field(default=None, gt=0, description="Limit price in $/MWh (required for LMT orders)")
     quantity_mwh: float = Field(..., gt=0, le=100, description="Quantity in MWh")
     time_slot: Optional[str] = Field(default=None, description="5-minute slot for RT orders")
+    time_in_force: TimeInForce = Field(default=TimeInForce.GTC, description="Time in force: GTC, IOC, or DAY")
+    expires_at: Optional[str] = Field(default=None, description="Explicit expiry time (ISO format)")
+    
+    def validate_order_data(self):
+        """Validate order data consistency"""
+        if self.order_type == OrderType.LIMIT and self.limit_price is None:
+            raise ValueError("Limit price is required for limit orders")
+        if self.order_type == OrderType.MARKET and self.limit_price is not None:
+            raise ValueError("Limit price should not be specified for market orders")
 
 class OrderResponse(BaseModel):
     """Order response model"""
@@ -44,18 +57,73 @@ class OrderResponse(BaseModel):
 async def create_order(
     order_data: OrderRequest = Body(...),
     user_id: str = Query(default="demo_user", description="User ID"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     session: Session = Depends(get_session)
 ) -> OrderResponse:
     """
     Create a new trading order for Day-Ahead or Real-Time market
     """
     try:
-        # Parse timestamps
+        # Validate order data consistency
+        order_data.validate_order_data()
+        
+        # Parse timestamps and handle RT interval assignment
         hour_start_utc = datetime.fromisoformat(order_data.hour_start.replace("Z", "+00:00"))
         time_slot_utc = None
+        expires_at_utc = None
         
-        if order_data.market == MarketType.REAL_TIME and order_data.time_slot:
-            time_slot_utc = datetime.fromisoformat(order_data.time_slot.replace("Z", "+00:00"))
+        # For RT orders, determine the appropriate 5-minute interval
+        if order_data.market == MarketType.REAL_TIME:
+            interval_manager = RTIntervalManager()
+            current_time = datetime.utcnow()
+            
+            # If time_slot is specified, validate it
+            if order_data.time_slot:
+                requested_slot = datetime.fromisoformat(order_data.time_slot.replace("Z", "+00:00"))
+                
+                # Align to 5-minute boundary if needed
+                is_aligned, aligned_slot = interval_manager.validate_interval_alignment(requested_slot)
+                if not is_aligned:
+                    logger.info(f"Aligning requested slot {requested_slot} to {aligned_slot}")
+                    time_slot_utc = aligned_slot
+                else:
+                    time_slot_utc = requested_slot
+                
+                # Check if we can place order for this interval
+                can_place, reason = interval_manager.can_place_order_for_interval(
+                    current_time, time_slot_utc
+                )
+                
+                logger.info(
+                    f"RT interval check: current_time={current_time}, "
+                    f"requested_slot={time_slot_utc}, can_place={can_place}, reason={reason}"
+                )
+                
+                if not can_place:
+                    raise HTTPException(status_code=422, detail=reason)
+            else:
+                # Auto-assign to appropriate interval based on current time
+                interval_start, interval_end, interval_type = interval_manager.get_interval_for_order(
+                    current_time
+                )
+                time_slot_utc = interval_start
+                
+                logger.info(
+                    f"Auto-assigned RT order to {interval_type} interval: "
+                    f"{interval_manager.format_interval_display(interval_start)}"
+                )
+            
+        if order_data.expires_at:
+            expires_at_utc = datetime.fromisoformat(order_data.expires_at.replace("Z", "+00:00"))
+        
+        # NOW check trading permissions with parsed timestamp
+        session_manager = TradingSessionManager(session)
+        is_allowed, permission_reason = session_manager.is_trading_allowed(
+            user_id, order_data.market, hour_start_utc
+        )
+        
+        if not is_allowed:
+            raise HTTPException(status_code=422, detail=permission_reason)
         
         # Validate Day-Ahead cutoff time
         if order_data.market == MarketType.DAY_AHEAD:
@@ -117,38 +185,88 @@ async def create_order(
             hour_start_utc=hour_start_utc,
             time_slot_utc=time_slot_utc,
             side=order_data.side,
+            order_type=order_data.order_type,
             limit_price=order_data.limit_price,
             quantity_mwh=order_data.quantity_mwh,
-            status=OrderStatus.PENDING
+            time_in_force=order_data.time_in_force,
+            expires_at=expires_at_utc,
+            status=OrderStatus.PENDING  # ALL orders start as PENDING
         )
         
         session.add(new_order)
         session.commit()
         session.refresh(new_order)
         
-        # For Real-Time orders, attempt immediate execution
-        if order_data.market == MarketType.REAL_TIME:
-            try:
-                engine = MatchingEngine(session)
-                match_result = await engine.execute_real_time_order(new_order.id)
-                
-                # Update order status based on matching result
-                session.refresh(new_order)
-                
-                return OrderResponse(
-                    order_id=new_order.order_id,
-                    status="success",
-                    message=f"Real-Time order {match_result.status}: {match_result.reason}",
-                    details={
-                        "filled_price": match_result.filled_price,
-                        "filled_quantity": match_result.filled_quantity,
-                        "order_status": new_order.status.value
-                    }
-                )
-            except Exception as e:
-                logger.error(f"Error executing RT order: {e}")
-                # Order created but not executed
+        # Update trade metrics in session (for pending orders)
+        session_manager.update_trade_metrics(
+            user_id, hour_start_utc, order_data.quantity_mwh
+        )
         
+        # RT orders - show interval assignment and settlement info
+        if order_data.market == MarketType.REAL_TIME:
+            interval_manager = RTIntervalManager()
+            interval_display = interval_manager.format_interval_display(time_slot_utc)
+            settlement_status = interval_manager.get_settlement_status(time_slot_utc)
+            
+            logger.info(
+                f"RT order {new_order.order_id} created for interval {interval_display}"
+            )
+            
+            # Check if we can settle immediately (rare, but possible if price is already available)
+            if settlement_status['can_settle']:
+                try:
+                    settlement_service = RTSettlementService(session)
+                    settlement_results = await settlement_service.check_and_settle_pending_orders(
+                        node=order_data.node,
+                        user_id=user_id
+                    )
+                    
+                    # Check if our order was settled
+                    session.refresh(new_order)
+                    
+                    if new_order.status == OrderStatus.FILLED:
+                        return OrderResponse(
+                            order_id=new_order.order_id,
+                            status="success",
+                            message=f"RT order filled at ${new_order.filled_price:.2f}/MWh for {interval_display}",
+                            details={
+                                "order_status": "filled",
+                                "filled_price": new_order.filled_price,
+                                "filled_quantity": new_order.filled_quantity,
+                                "interval": interval_display,
+                                "settlement_time": datetime.utcnow().isoformat()
+                            }
+                        )
+                    elif new_order.status == OrderStatus.REJECTED:
+                        return OrderResponse(
+                            order_id=new_order.order_id,
+                            status="success",
+                            message=f"RT order rejected: {new_order.rejection_reason}",
+                            details={
+                                "order_status": "rejected",
+                                "rejection_reason": new_order.rejection_reason,
+                                "interval": interval_display
+                            }
+                        )
+                except Exception as e:
+                    logger.warning(f"Could not settle RT order immediately: {e}")
+            
+            # Order remains pending until settlement
+            return OrderResponse(
+                order_id=new_order.order_id,
+                status="success",
+                message=f"RT order placed for {interval_display} - {settlement_status['message']}",
+                details={
+                    "order_status": "pending",
+                    "interval": interval_display,
+                    "interval_start_utc": time_slot_utc.isoformat(),
+                    "interval_end_utc": (time_slot_utc + timedelta(minutes=5)).isoformat(),
+                    "expected_settlement_time": settlement_status['expected_settlement_time'].isoformat(),
+                    "settlement_message": settlement_status['message']
+                }
+            )
+        
+        # DA orders also remain pending until DA close/matching
         return OrderResponse(
             order_id=new_order.order_id,
             status="success",
@@ -167,6 +285,111 @@ async def create_order(
         logger.error(f"Error creating order: {e}")
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating order: {e}")
+
+@router.post("/execute-rt/{order_id}")
+async def execute_rt_order(
+    order_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Manually execute a pending RT order
+    """
+    try:
+        # Get the order
+        order = session.get(TradingOrder, order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        if order.market != MarketType.REAL_TIME:
+            raise HTTPException(status_code=400, detail="Not a Real-Time order")
+        
+        if order.status != OrderStatus.PENDING:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Order status is {order.status.value}, not pending"
+            )
+        
+        # Execute the order
+        matching_engine = MatchingEngine(session)
+        result = await matching_engine.execute_real_time_order(order_id)
+        
+        # Refresh order to get updated values
+        session.refresh(order)
+        
+        return {
+            "status": "success",
+            "order_id": order.order_id,
+            "execution_status": result.status,
+            "filled_price": result.filled_price,
+            "filled_quantity": result.filled_quantity,
+            "reason": result.reason
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing RT order {order_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error executing order: {e}")
+
+@router.post("/settle-rt")
+async def settle_pending_rt_orders(
+    user_id: str = Query(default="demo_user", description="User ID"),
+    node: str = Query(default="PJM_RTO", description="Grid node"),
+    session: Session = Depends(get_session)
+):
+    """
+    Check and settle pending RT orders with published interval prices
+    
+    This endpoint:
+    1. Finds all pending RT orders
+    2. Checks if their intervals have completed
+    3. Fetches the published RT prices for those intervals
+    4. Settles orders based on limit price vs actual price
+    """
+    try:
+        settlement_service = RTSettlementService(session)
+        result = await settlement_service.check_and_settle_pending_orders(node, user_id)
+        
+        return {
+            "status": "success",
+            "summary": {
+                "checked": result['checked'],
+                "settled": result['settled'],
+                "filled": result['filled'],
+                "rejected": result['rejected'],
+                "waiting": result['waiting'],
+                "errors": result['errors']
+            },
+            "details": result['details']
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in RT settlement: {e}")
+        raise HTTPException(status_code=500, detail=f"Error settling RT orders: {e}")
+
+@router.get("/rt-status")
+async def get_rt_orders_status(
+    user_id: str = Query(default="demo_user", description="User ID"),
+    node: str = Query(default="PJM_RTO", description="Grid node"),
+    session: Session = Depends(get_session)
+):
+    """
+    Get status of all pending RT orders with settlement information
+    """
+    try:
+        settlement_service = RTSettlementService(session)
+        status_list = await settlement_service.get_pending_orders_status(node, user_id)
+        
+        return {
+            "status": "success",
+            "pending_orders": status_list,
+            "count": len(status_list),
+            "current_time": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting RT order status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting status: {e}")
 
 @router.get("/")
 async def list_orders(
@@ -548,3 +771,95 @@ async def validate_position(
     except Exception as e:
         logger.error(f"Error validating position: {e}")
         raise HTTPException(status_code=500, detail=f"Error validating position: {e}")
+
+@router.post("/settle-rt")
+async def settle_rt_orders(
+    user_id: str = Query(default="demo_user", description="User ID"),
+    node: str = Query(default="PJM_RTO", description="Node ID"),
+    force: bool = Query(default=False, description="Force settlement even if time hasn't passed"),
+    session: Session = Depends(get_session)
+):
+    """
+    Settle pending RT orders whose execution time has passed.
+    This endpoint is called periodically by the frontend to process RT settlements.
+    """
+    try:
+        from datetime import timedelta
+        import random
+        
+        now = datetime.now(timezone.utc)
+        settled_orders = []
+        
+        # Query pending RT orders for the user and node
+        stmt = select(Order).where(
+            Order.user_id == user_id,
+            Order.node == node,
+            Order.market == MarketType.REAL_TIME,
+            Order.status == OrderStatus.PENDING
+        )
+        
+        result = session.execute(stmt)
+        pending_orders = result.scalars().all()
+        
+        logger.info(f"Found {len(pending_orders)} pending RT orders for settlement check")
+        
+        for order in pending_orders:
+            # Determine execution time
+            exec_time = order.time_slot_utc if order.time_slot_utc else order.hour_start
+            exec_end_time = exec_time + timedelta(minutes=5)  # RT intervals are 5 minutes
+            
+            # Check if execution time has passed (or force flag is set)
+            if exec_end_time <= now or force:
+                # Generate mock RT price (in production, fetch from market data)
+                hour = exec_time.hour
+                base_price = 42.0 if 6 <= hour < 21 else 40.0  # Higher during day
+                rt_price = base_price + random.uniform(-2, 3)  # Add some variation
+                
+                # Determine if order fills
+                fills = False
+                if order.side == OrderSide.BUY:
+                    fills = order.limit_price >= rt_price
+                else:  # SELL
+                    fills = order.limit_price <= rt_price
+                
+                if fills:
+                    order.status = OrderStatus.FILLED
+                    order.filled_price = rt_price
+                    order.filled_at = now
+                    
+                    # Simple P&L calculation (in production, would be more complex)
+                    if order.side == OrderSide.BUY:
+                        # Assume we can sell at a small premium
+                        order.pnl = (rt_price * 1.01 - rt_price) * order.quantity_mwh
+                    else:
+                        # Assume we avoided buying at a small discount  
+                        order.pnl = (rt_price - rt_price * 0.99) * order.quantity_mwh
+                    
+                    logger.info(f"Order {order.order_id[:8]} FILLED at ${rt_price:.2f}")
+                else:
+                    order.status = OrderStatus.REJECTED
+                    order.rejected_reason = f"Limit not met. RT price: ${rt_price:.2f}"
+                    logger.info(f"Order {order.order_id[:8]} REJECTED - limit not met")
+                
+                order.updated_at = now
+                settled_orders.append({
+                    "order_id": order.order_id,
+                    "status": order.status.value,
+                    "filled_price": order.filled_price,
+                    "rt_price": rt_price,
+                    "pnl": order.pnl
+                })
+        
+        session.commit()
+        
+        return {
+            "status": "success",
+            "settled_count": len(settled_orders),
+            "settled_orders": settled_orders,
+            "message": f"Settled {len(settled_orders)} RT orders"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error settling RT orders: {e}")
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error settling RT orders: {e}")

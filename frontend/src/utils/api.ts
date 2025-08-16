@@ -123,6 +123,41 @@ export const endpoints = {
   // Health check
   health: () => api.get('/health'),
   
+  // Session Management
+  session: {
+    initialize: (userId = 'demo_user', tradingDate?: string) => 
+      api.post('/api/session/initialize', {}, { 
+        params: { user_id: userId, ...(tradingDate && { trading_date: tradingDate }) }
+      }),
+    
+    getSummary: (userId = 'demo_user', tradingDate?: string) =>
+      api.get('/api/session/summary', {
+        params: { user_id: userId, ...(tradingDate && { trading_date: tradingDate }) }
+      }),
+    
+    getMarketState: () => api.get('/api/session/market-state'),
+    
+    checkTradingPermissions: (market: 'day-ahead' | 'real-time', userId = 'demo_user') =>
+      api.get('/api/session/trading-permissions', {
+        params: { market, user_id: userId }
+      }),
+    
+    getCapital: (userId = 'demo_user') =>
+      api.get('/api/session/capital', { params: { user_id: userId } }),
+    
+    dailyReset: (userId = 'demo_user', tradingDate?: string) =>
+      api.post('/api/session/daily-reset', {}, {
+        params: { user_id: userId, ...(tradingDate && { trading_date: tradingDate }) }
+      }),
+    
+    getCarryoverPositions: (userId = 'demo_user', tradingDate?: string) =>
+      api.get('/api/session/carryover-positions', {
+        params: { user_id: userId, ...(tradingDate && { trading_date: tradingDate }) }
+      }),
+    
+    getStatus: () => api.get('/api/session/status')
+  },
+  
   // Market data endpoints
   getDayAheadPrices: (date: string, node: string) => 
     api.get(`/api/market/da?date=${date}&node=${node}`),

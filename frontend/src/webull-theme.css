@@ -883,6 +883,47 @@ button[class*="arco-btn"]:has(svg[class*="icon-refresh"]) span {
   font-weight: 600 !important;
 }
 
+/* Tabs styling - specific overrides for hover/active to ensure underline */
+.arco-tabs-tab {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.2s ease !important;
+}
+
+.arco-tabs-tab:hover {
+  background: transparent !important;
+  border-bottom: 2px solid #0066ff !important;
+  color: var(--text-primary) !important;
+  box-shadow: none !important; /* Ensure no box-shadow on hover */
+}
+
+.arco-tabs-tab-active {
+  background: transparent !important;
+  border-bottom: 2px solid #0066ff !important;
+  color: #0066ff !important;
+  box-shadow: none !important; /* Ensure no box-shadow on active */
+}
+
+/* More aggressive overrides for tab content on hover/active */
+.arco-tabs-tab-title:hover,
+.arco-tabs-tab-title-active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.arco-tabs-tab-title:hover::before,
+.arco-tabs-tabs-tab-title-active::before {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+.arco-tabs-nav-ink {
+  background-color: #0066ff !important; /* Ensure the active tab indicator is blue */
+}
+
+
 /* Typography */
 .arco-typography {
   color: var(--text-primary) !important;

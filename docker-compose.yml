@@ -9,14 +9,37 @@ services:
     environment:
       - DATABASE_URL=sqlite:///./data/energy_trader.db
       - GRIDSTATUS_API_KEY=6574119a04954abd93469f85194e07a0
+      - GRIDSTATUS_API_KEYS=6574119a04954abd93469f85194e07a0,6459ee18ef894f68a5834fa0f25d529b,7ca25d45ba9c44efa64c7e616b82967e,908a198ff86e42e5ac523d8cb32bc7ef,9a60f0217fe044248b4920bdc2c50a7e
       - GRIDSTATUS_BASE_URL=https://api.gridstatus.io
       - USE_REAL_DATA=true
       - DEFAULT_NODE=PJM_RTO
       - MARKET_TIMEZONE=America/New_York
       - ORDER_CUTOFF_HOUR=11
+      - ORDER_CUTOFF_MINUTE=0
+      - ORDER_CUTOFF_SECOND=0
       - MAX_ORDERS_PER_HOUR=10
       - DEBUG=True
       - PYTHONUNBUFFERED=1
+      # Deterministic Matching Configuration
+      - DETERMINISTIC_MATCHING_ENABLED=true
+      - MATCHING_LATENCY_THRESHOLD_MS=100
+      - MATCHING_QUEUE_LAG_ALERT_INTERVALS=2
+      # Trading Session Configuration
+      - SIM_STARTING_CAPITAL=10000.0
+      - SIM_DAILY_RESET_ENABLED=true
+      - SIM_CAPITAL_PERSISTENCE=true
+      # PJM Trading Day State Machine
+      - PJM_STATE_MACHINE_ENABLED=true
+      - PJM_DATA_RETENTION_DAYS=3
+      - PJM_ARCHIVER_BATCH_SIZE=100
+      - MARKET_OPEN_HOUR=0
+      - MARKET_CLOSE_HOUR=23
+      - MARKET_CLOSE_MINUTE=59
+      # RT Trading should be 24/7 - extend hours for RT
+      - RT_TRADING_24_7=true
+      # Allow unlimited short selling for simulation
+      - ALLOW_SHORT_SELLING=true
+      - MAX_SHORT_POSITION_MWH=1000
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
